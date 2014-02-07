@@ -3,6 +3,9 @@
     By Spacetech
 */
 
+
+#define ENGINE_LIB "engine_srv.so"
+
 #include "main.h"
 
 //#include "node.h"
@@ -997,7 +1000,7 @@ LUA_FUNCTION(Node_RemoveConnection)
 
 int Init(lua_State* L)
 {
-	CreateInterfaceFn interfaceFactory = Sys_GetFactory("engine.dll");
+	CreateInterfaceFn interfaceFactory = Sys_GetFactory(ENGINE_LIB);
 
 	engine = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, NULL);
 
