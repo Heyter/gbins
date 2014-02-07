@@ -8,6 +8,9 @@
 #include "engine/IEngineTrace.h"
 #include "defines.h"
 
+#undef min
+#undef max
+
 #ifdef USE_BOOST_THREADS
 #include <boost/thread/thread.hpp>
 #else

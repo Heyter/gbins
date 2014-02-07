@@ -27,6 +27,7 @@ LIBFILES= \
   libsteam_api.so
   
 GATEKEEPER_OBJS = \
+	$(OBJ_DIR)/kdtree.o \
 	$(OBJ_DIR)/main.o \
 	$(OBJ_DIR)/nav.o \
 	$(OBJ_DIR)/node.o \
@@ -40,7 +41,7 @@ INCLUDE=-I$(PROJECT_DIR)/common -I$(PROJECT_DIR)/hde -I$(PROJECT_DIR)/steam -I$(
 
 CFLAGS=$(USER_CFLAGS) $(OPTFLAGS) -mtune=i686 -march=pentium -mmmx -msse -pipe -DGMMODULE -DUSE_BOOST_THREADS -DNO_MALLOC_OVERRIDE -DGNUC -DPOSIX -D__LINUX__ -D_LINUX -Dsprintf_s=snprintf -Dstrcmpi=strcasecmp -D_alloca=alloca -DVPROF_LEVEL=1 -DSWDS -D_LINUX -DLINUX -DNDEBUG -fpermissive -Dstricmp=strcasecmp -D_stricmp=strcasecmp -Dstrcpy_s=strncpy -D_strnicmp=strncasecmp -Dstrnicmp=strncasecmp -D_snprintf=snprintf -D_vsnprintf=vsnprintf -D_alloca=alloca -Dstrcmpi=strcasecmp  -Usprintf=use_Q_snprintf_instead_of_sprintf -Ustrncpy=use_Q_strncpy_instead -Ufopen=dont_use_fopen -UPROTECTED_THINGS_ENABLE
 
-LFLAGS=$(USER_LFLAGS) -lm -ldl $(LIBFILES) -shared -Wl,-z,defs
+LFLAGS=$(USER_LFLAGS) -lm $(LIBFILES) -shared -Wl,-z,defs -ldl -lpthread -lboost_thread
 
 DO_CC=$(COMPILER) $(INCLUDE) -w $(CFLAGS) -DARCH=i486 -o $@ -c $<
 
