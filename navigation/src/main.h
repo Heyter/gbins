@@ -5,7 +5,7 @@
 
 #include <interface.h>
 #include "eiface.h"
-#include "engine/ienginetrace.h"
+#include "engine/IEngineTrace.h"
 #include "defines.h"
 
 #ifdef USE_BOOST_THREADS
