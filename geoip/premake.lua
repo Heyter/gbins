@@ -10,7 +10,8 @@ SOLUTION"geoip"
 	WINDOWS()
 		defines		{"NNOOOOO"}
 		libdirs		{"geoip/libGeoIP"}
-		links		{"GeoIP"}
+		includedirs	{"geoip/libGeoIP"}
+		links		{"Ws2_32","GeoIP"}
 	
 	LINUX()
 		libdirs		{"libGeoIP","geoip/lib"}
@@ -18,7 +19,5 @@ SOLUTION"geoip"
 
 	PROJECT()
 		configuration 		"windows"
-			SOURCE_SDK_LINKS(true)
-
+			files{"geoip/libGeoIP/GeoIP_deprecated.c"}
 		configuration 		"not windows"
-			SOURCE_SDK_LINKS(false)
