@@ -3,7 +3,7 @@ dofile("../common.lua")
 SOLUTION"geoip"
 	
 	targetdir	"Release"
-	INCLUDES	(false,true,false)
+	INCLUDES	"gmod_sdk"
 	includedirs	{"geoip/"}
 	defines		{"NDEBUG"}
 	

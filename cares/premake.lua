@@ -3,7 +3,8 @@ dofile("../common.lua")
 SOLUTION"cares"
 	
 	targetdir	"Release"
-	INCLUDES	(true,false,true)
+	INCLUDES	"source_sdk"
+	INCLUDES	"backwards_headers"
 	includedirs	{"cares/"}
 	defines		{"NDEBUG"}
 	
@@ -14,9 +15,11 @@ SOLUTION"cares"
 	
 	LINUX()
 		libdirs		{"cares/.libs"}
-		linkoptions({"-Wl,-Bstatic,-lcares,-Bdynamic"})
-
+		links_static "cares"
+		
 	PROJECT()
+		targetprefix		"gmsv_lib" -- hack
+		
 		configuration 		"windows"
 			SOURCE_SDK_LINKS(true)
 

@@ -66,26 +66,42 @@ function SOURCE_SDK_LINKS(windows)
 	end
 end
 
-
-function INCLUDES(sdk,gmod,backwards,steamworks)
-	if sdk then _INCLUDE_SDK = true
-		print"Including source sdk"
-		libdirs{SOURCE_SDK.."/lib/public/linux32",SOURCE_SDK.."/lib/linux32",SOURCE_SDK.."/lib/public"}
-		includedirs(SOURCE_SDK_INCLUDES)
-	end
-	if gmod then _INCLUDE_GMOD = true
-		print"Including gmod sdk"
-		includedirs{GARRYSMOD_INCLUDES_PATH}	
-	end
-	if backwards then _INCLUDE_BACKWARDS  = true
-		print"Including backwards headers"
-		includedirs{BACKWARDS_HEADERS}
-		libdirs{BACKWARDS_HEADERS}
-	end
-	if steamworks then _INCLUDE_STEAMWORKS  =true
-		print"Including steamworks"
-		error"no"
-	end
+local include_helpers = {
+	source_sdk={
+		func = function()		
+			libdirs{SOURCE_SDK.."/lib/public/linux32",SOURCE_SDK.."/lib/linux32",SOURCE_SDK.."/lib/public"}
+			includedirs(SOURCE_SDK_INCLUDES)
+		end,
+	},
+	gmod_sdk={
+		func = function()
+			includedirs{GARRYSMOD_INCLUDES_PATH}	
+		end,
+	},	
+	backwards_headers={
+		func = function()
+			includedirs{BACKWARDS_HEADERS}
+			libdirs{BACKWARDS_HEADERS}
+		end,
+	},
+	steamworks={
+		func = function()
+		end,
+	},
+}
+function INCLUDES(what)
+	local t = include_helpers[what]
+	if not t then error("Not found: "..what) end
+	local included = t.included
+	print("Including "..what,included and "REINCLUDE!?!?" or "")
+	t:func(included)
+	t.included=true
+end
+function IsIncluded(what)
+	local t = include_helpers[what]
+	if not t then error("Not found: "..what) end
+	local included = t.included
+	return included or false
 end
 
 function SOLUTION(name)
@@ -145,10 +161,8 @@ function PROJECT()
 
 	targetprefix		"gmsv_"
 	
-	if _INCLUDE_SDK then
-		
-	end
-	if _INCLUDE_BACKWARDS then
+
+	if IsIncluded"backwards_headers" then
 		files{BACKWARDS_HEADERS.."/*.cpp"}
 	end
 	
