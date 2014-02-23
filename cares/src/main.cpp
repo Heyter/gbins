@@ -1,14 +1,22 @@
 
 #ifdef WIN32
-	#define WIN32_LEAN_AND_MEAN
-	#include <windows.h>
-#else if defined _LINUX
-
+	
+	#include <stdio.h> 
+	#pragma comment(lib, "libcares")
+	#define snprintf _snprintf 
+	#define vsnprintf _vsnprintf 
+	#define strcasecmp _stricmp 
+	#define strncasecmp _strnicmp 
+#else
 	#include <dlfcn.h>
 	#include <sys/mman.h>
 	#include <stdlib.h>
 	#include <unistd.h>
-
+	#include <sys/socket.h>
+	#include <netinet/in.h>
+	#include <arpa/inet.h>
+	#include <netdb.h>
+	#include <unistd.h>
 #endif
 
 #include <stdio.h>
@@ -16,18 +24,9 @@
 #include <string.h>
 #include <time.h>
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-
-
-extern "C" {
-
+#define CARES_STATICLIB
 #include "ares.h"
 #include "ares_dns.h"
-}
 
 
 ares_channel channel;

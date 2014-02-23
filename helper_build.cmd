@@ -1,0 +1,3 @@
+echo Building...
+echo.
+FOR %%c in (windows\vs2010\*.sln) DO msbuild %%c
