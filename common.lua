@@ -171,9 +171,9 @@ function PROJECT()
 				"_CRT_SECURE_NO_DEPRECATE",
 				"RAD_TELEMETRY_DISABLED",
 				"PROTECTED_THINGS_ENABLE",
-				"strncpy=use_Q_strncpy_instead",
-				"_snprintf=use_Q_snprintf_instead",
-				"fopen=dont_use_fopen",
+				--"strncpy=use_Q_strncpy_instead",
+				--"_snprintf=use_Q_snprintf_instead",
+				--"fopen=dont_use_fopen",
 			}
 			
 	files	{"src/*.cpp"}
