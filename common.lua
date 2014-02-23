@@ -70,7 +70,7 @@ end
 
 local include_helpers = {
 	source_sdk={
-		func = function()		
+		func = function(_)		
 			libdirs{
 				SOURCE_SDK.."/lib/public/linux32",
 				SOURCE_SDK.."/lib/linux32",
@@ -80,18 +80,39 @@ local include_helpers = {
 		end,
 	},
 	gmod_sdk={
-		func = function()
+		func = function(_)
 			includedirs{GARRYSMOD_INCLUDES_PATH}	
 		end,
 	},	
 	backwards_headers={
-		func = function()
+		func = function(_)
 			includedirs{BACKWARDS_HEADERS}
 			libdirs{BACKWARDS_HEADERS}
 		end,
 	},
+	hooking={
+		func = function(_,i)
+			includedirs{HOOKING}
+			if i then
+				print"EEK"
+				files{HOOKING..'/hde.cpp'}
+			end
+		end,
+	},
+	sigscanning={
+		func = function(_,i)
+			includedirs{SIGSCANNING}
+			if i then
+				configuration 		"windows"
+					files{SIGSCANNING..'/sigscan.cpp'}
+				configuration 		"not windows"
+					files{SIGSCANNING..'/memutils.cpp'}
+			end
+		end,
+	},
 	steamworks={
-		func = function()
+		func = function(_)
+			error"todo"
 		end,
 	},
 }
@@ -101,7 +122,7 @@ function INCLUDES(what)
 	local included = t.included
 	print("Including "..what,included and "REINCLUDE!?!?" or "")
 	t:func(included)
-	t.included=true
+	t.included = true
 end
 function IsIncluded(what)
 	local t = include_helpers[what]
@@ -116,13 +137,12 @@ end
 
 function SOLUTION(name)
 	_SOLUTION_NAME=name
-	solution(name)
-	language("C++")
-	location(PROJECT_FOLDER)
-	flags{"ExtraWarnings","NoPCH", "EnableSSE2","EnableSSE"}
-	
+	solution	(name)
+	language	("C++")
+	location	(PROJECT_FOLDER)
+	flags		{"ExtraWarnings","NoPCH", "EnableSSE2","EnableSSE"}
 	if not runtime_required then
-		flags{"StaticRuntime"}
+		flags	{"StaticRuntime"}
 	end
 	
 	configurations
@@ -167,7 +187,7 @@ function PROJECT()
 				--"NO_HOOK_MALLOC",
 				--LINUX? "NO_MALLOC_OVERRIDE",
 				--"SOURCE_SDK=1",
-				"CLIENT_DLL",
+				--"CLIENT_DLL",
 				"VERSION_SAFE_STEAM_API_INTERFACES",
 				"VECTOR",
 				"NO_STRING_T",

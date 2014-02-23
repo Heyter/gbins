@@ -420,7 +420,7 @@ LUA_FUNCTION( SetAllowClientSideAddString ) {
 	return 0;
 }
 
-#ifndef _LINUX
+#ifdef CLIENT_DLL
 void OnTableChanged( void *object, INetworkStringTable *stringTable, int stringNumber, const char *newString, void const *newData ) {
 
 	ILuaObject* hook = gLua->GetGlobal("hook");
@@ -588,3 +588,20 @@ int Shutdown(lua_State *L) {
 #endif
 	return 0;
 }
+
+BOOLEAN WINAPI DllMain( IN HINSTANCE hDllHandle, 
+         IN DWORD     nReason, 
+         IN LPVOID    Reserved ) {
+
+  switch ( nReason )
+   {
+    case DLL_PROCESS_ATTACH:
+      DisableThreadLibraryCalls( hDllHandle );
+      break;
+    case DLL_PROCESS_DETACH:
+      break;
+   }
+
+  return true;
+
+ }
