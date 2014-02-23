@@ -45,10 +45,10 @@ SpewRetval_t LuaSpew( SpewType_t spewType, const char *pMsg )
 				
 				
 				LUA->PushString( "EngineSpew" );
-				LUA->Push( (double) spewType  );
+				LUA->PushNumber( (double) spewType  );
 				LUA->PushString( pMsg );
 				LUA->PushString( GetSpewOutputGroup()  );
-				LUA->Push( (double) GetSpewOutputLevel() );
+				LUA->PushNumber( (double) GetSpewOutputLevel() );
 				
 				// screw tables. Lets just push this in like this and be done with it.
 				const Color*  c = GetSpewOutputColor( );
@@ -56,16 +56,20 @@ SpewRetval_t LuaSpew( SpewType_t spewType, const char *pMsg )
 					int Red, Green, Blue, Alpha = 0;
 					c->GetColor(Red,Green,Blue,Alpha);
 
-					LUA->Push( (float) Red );
-					LUA->Push( (float) Green );
-					LUA->Push( (float) Blue );
+					LUA->PushNumber( (float) Red );
+					LUA->PushNumber( (float) Green );
+					LUA->PushNumber( (float) Blue );
 
-				// hook.Run("EngineSpew",0,"","",0,0,0,0);
-				
+				/*
+					lua_run hook.Add("EngineSpew","a",function(t,msg,grp,lev,r,g,b) print(...) end)
+					
+				*/
 				inspew = true;
+				
+				// hook.Run("EngineSpew",0,"","",0,0,0,0);
 				if( LUA->PCall( 8, 1, 0 ) != 0 )
 				{
-					printf( "[EngineSpew error] %s\n", LUA->GetString( ) );
+					DevWarning( "[EngineSpew error] %s\n", LUA->GetString( ) );
 					LUA->Pop( 3 );
 					inspew = false;
 					return g_fnOldSpew( spewType, pMsg );
