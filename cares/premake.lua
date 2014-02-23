@@ -2,18 +2,18 @@ dofile("../common.lua")
 
 SOLUTION"cares"
 	
-	targetdir("Release")
-	INCLUDES(true,false,true)
-	includedirs	({"cares/"})
-	defines({"NDEBUG","USE_WINSOCK"})
+	targetdir	"Release"
+	INCLUDES	(true,false,true)
+	includedirs	{"cares/"}
+	defines		{"NDEBUG"}
 	
-	WINDOWS() -- cares does not autobuild!
+	WINDOWS()
+		defines		{"USE_WINSOCK"}
 		libdirs		{"cares/msvc100/cares/lib-release/","cares/msvc100/cares/lib-release/lib/"}
 		links		{"Ws2_32","libcares"}
 	
-	LINUX() -- cares does not autobuild!
-		links		{"cares"}
-		libdirs		{"cares/linux/cares/lib-release/"} -- wrong path!
+	LINUX()
+		libdirs		{"cares/.libs"}
 		linkoptions({"-Wl,-Bstatic,-lcares,-Bdynamic"})
 
 	PROJECT()
