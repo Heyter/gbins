@@ -19,9 +19,3 @@ SOLUTION"cares"
 		
 	PROJECT()
 		targetprefix		"gmsv_lib" -- hack
-		
-		configuration 		"windows"
-			SOURCE_SDK_LINKS(true)
-
-		configuration 		"not windows"
-			SOURCE_SDK_LINKS(false)

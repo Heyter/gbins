@@ -52,10 +52,12 @@ SOURCE_SDK_INCLUDES={
 	SOURCE_SDK.."/game/server",
 	SOURCE_SDK.."/game/client",
 }
-function SOURCE_SDK_LINKS(windows) 
-	if windows then
+function SOURCE_SDK_LINKS()
+	local cfg = configuration()
+	configuration 		"windows"
 		links{"tier0","tier1","tier2","tier3","mathlib","steam_api","vstdlib"}
-	else
+
+	configuration 		"not windows"
 		linkoptions {  -- :(
 			SOURCE_SDK.."/lib/public/linux32/tier1.a",
 			SOURCE_SDK.."/lib/public/linux32/tier2.a",
@@ -63,13 +65,17 @@ function SOURCE_SDK_LINKS(windows)
 			SOURCE_SDK.."/lib/public/linux32/mathlib.a",
 			}
 		links {"tier0_srv","vstdlib_srv","steam_api"}
-	end
+	configuration(cfg.terms)
 end
 
 local include_helpers = {
 	source_sdk={
 		func = function()		
-			libdirs{SOURCE_SDK.."/lib/public/linux32",SOURCE_SDK.."/lib/linux32",SOURCE_SDK.."/lib/public"}
+			libdirs{
+				SOURCE_SDK.."/lib/public/linux32",
+				SOURCE_SDK.."/lib/linux32",
+				SOURCE_SDK.."/lib/public"
+				}
 			includedirs(SOURCE_SDK_INCLUDES)
 		end,
 	},
