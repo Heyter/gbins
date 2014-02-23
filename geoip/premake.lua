@@ -8,14 +8,13 @@ SOLUTION"geoip"
 	defines		{"NDEBUG"}
 	
 	WINDOWS()
-		defines		{"NNOOOOO"}
 		libdirs		{"geoip/libGeoIP"}
 		includedirs	{"geoip/libGeoIP"}
 		links		{"Ws2_32","GeoIP"}
 	
 	LINUX()
 		libdirs		{"libGeoIP","geoip/lib"}
-		linkoptions	{"-Wl,-Bstatic,-lGeoIP,-Bdynamic"}
+		links_static "GeoIP"
 
 	PROJECT()
 		configuration 		"windows"
