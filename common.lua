@@ -109,13 +109,22 @@ function IsIncluded(what)
 	local included = t.included
 	return included or false
 end
+local runtime_required
+function RequireRuntime()
+	runtime_required = true
+end
 
 function SOLUTION(name)
 	_SOLUTION_NAME=name
 	solution(name)
 	language("C++")
 	location(PROJECT_FOLDER)
-	flags{"ExtraWarnings","NoPCH", "StaticRuntime", "EnableSSE2","EnableSSE"}
+	flags{"ExtraWarnings","NoPCH", "EnableSSE2","EnableSSE"}
+	
+	if not runtime_required then
+		flags{"StaticRuntime"}
+	end
+	
 	configurations
 	{ 
 		"Release"
@@ -125,12 +134,16 @@ end
 
 function WINDOWS()
 	configuration	("windows")
-		defines		{"WIN32","_WIN32","_WINDOWS"}
-		linkoptions  { "/nodefaultlib:\"libcmt\"", "/nodefaultlib:\"libcmtd\"" }
+		defines		{"WIN32","_WIN32","_WINDOWS"}		
+		defines 	{'SERVER_BIN="server.dll"'}
+		linkoptions	{ "/nodefaultlib:\"libcmt\"", "/nodefaultlib:\"libcmtd\"" }
 end
 
 function LINUX()
 	configuration	("not windows")
+		defines 	{'SERVER_BIN="server_srv.so"'}
+		defines 	{'LUA_SHARED="lua_shared_srv.so"'}
+		defines 	{'LUA_SHARED_CLIENT="lua_shared.so"'}
 		defines		{"POSIX","_POSIX","LINUX","_LINUX","GNUC","NO_MALLOC_OVERRIDE"}
 		linkoptions	{"-Wl,-z,defs"}
 		links		{"rt"}
