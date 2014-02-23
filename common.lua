@@ -132,11 +132,17 @@ function SOLUTION(name)
 	
 end
 
+local defaultlibs_required
+function RequireDefaultlibs()
+	defaultlibs_required = true
+end
 function WINDOWS()
 	configuration	("windows")
 		defines		{"WIN32","_WIN32","_WINDOWS"}		
 		defines 	{'SERVER_BIN="server.dll"'}
-		linkoptions	{ "/nodefaultlib:\"libcmt\"", "/nodefaultlib:\"libcmtd\"" }
+		if not defaultlibs_required then
+			linkoptions	{ "/nodefaultlib:\"libcmt\"", "/nodefaultlib:\"libcmtd\"" }
+		end
 end
 
 function LINUX()

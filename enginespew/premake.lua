@@ -1,11 +1,8 @@
 dofile("../common.lua")
 
-RequireRuntime() -- hack
+RequireDefaultlibs()
 
 SOLUTION"enginespew"
-	
-	-- Flag removing is in BETA!?
-	--removeflags "StaticRuntime"
 	
 	targetdir	"Release"
 	INCLUDES	"source_sdk"
