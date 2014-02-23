@@ -162,3 +162,9 @@ function PROJECT()
 	project(_SOLUTION_NAME)
 	
 end
+
+function links_static(what)
+	linkoptions{"-Wl,-Bstatic,-l"..what..",-Bdynamic"}
+end
+
+
