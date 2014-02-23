@@ -56,8 +56,13 @@ function SOURCE_SDK_LINKS(windows)
 	if windows then
 		links{"tier0","tier1","tier2","tier3","mathlib","steam_api","vstdlib"}
 	else
-		links{"tier1","tier2","tier3","mathlib",
-			"tier0_srv","vstdlib_srv","steam_api"}
+		linkoptions {  -- :(
+			SOURCE_SDK.."/lib/public/linux32/tier1.a",
+			SOURCE_SDK.."/lib/public/linux32/tier2.a",
+			SOURCE_SDK.."/lib/public/linux32/tier3.a",
+			SOURCE_SDK.."/lib/public/linux32/mathlib.a",
+			}
+		links {"tier0_srv","vstdlib_srv","steam_api"}
 	end
 end
 
@@ -104,8 +109,10 @@ end
 
 function LINUX()
 	configuration	("not windows")
-		defines		{"LINUX","_LINUX","GNUC","NO_MALLOC_OVERRIDE"}
+		defines		{"POSIX","_POSIX","LINUX","_LINUX","GNUC","NO_MALLOC_OVERRIDE"}
 		linkoptions	{"-Wl,-z,defs"}
+		links		{"rt"}
+		libdirs		{SRCDS_DIR..'/bin'}
 end
 
 
@@ -123,6 +130,7 @@ function PROJECT()
 				"VERSION_SAFE_STEAM_API_INTERFACES",
 				"VECTOR",
 				"NO_STRING_T",
+				"NO_SDK",
 				"COMPILER_MSVC32",
 				"_CRT_NONSTDC_NO_DEPRECATE",
 				"_CRT_SECURE_NO_DEPRECATE",

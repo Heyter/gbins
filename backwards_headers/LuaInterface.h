@@ -22,4 +22,4 @@
 
 	#define LUA L->luabase
 
-#endif 
+#endif
