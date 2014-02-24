@@ -16,4 +16,4 @@ SOLUTION"enginespew"
 	PROJECT()
 		SOURCE_SDK_LINKS()
 		configuration 		"windows"
-		configuration 		"not windows"
+		configuration 		"linux"

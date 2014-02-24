@@ -19,4 +19,4 @@ SOLUTION"geoip"
 	PROJECT()
 		configuration 		"windows"
 			files{"geoip/libGeoIP/GeoIP_deprecated.c"}
-		configuration 		"not windows"
+		configuration 		"linux"

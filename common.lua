@@ -73,7 +73,7 @@ function SOURCE_SDK_LINKS()
 	configuration 		"windows"
 		links{"tier0","tier1","tier2","tier3","mathlib","steam_api","vstdlib"}
 
-	configuration 		"not windows"
+	configuration 		"linux"
 		linkoptions {  -- :(
 			SOURCE_SDK.."/lib/public/linux32/tier1.a",
 			SOURCE_SDK.."/lib/public/linux32/tier2.a",
@@ -121,7 +121,7 @@ local include_helpers = {
 			if i then
 				configuration 		"windows"
 					files{SIGSCANNING..'/sigscan.cpp'}
-				configuration 		"not windows"
+				configuration 		"linux"
 					files{SIGSCANNING..'/memutils.cpp'}
 			end
 		end,
@@ -156,7 +156,7 @@ function SOLUTION(name)
 	solution	(name)
 	language	("C++")
 	if platforms then
-		platforms { "Windows" }
+		platforms { "x32" }
 	end
 	location	(PROJECT_FOLDER)
 	flags		{"NoPCH"}
@@ -192,7 +192,7 @@ function WINDOWS()
 end
 
 function LINUX()
-	configuration	("not windows")
+	configuration	("linux")
 		defines 	{'SERVER_BIN="server_srv.so"'}
 		defines 	{'LUA_SHARED="lua_shared_srv.so"'}
 		defines 	{'LUA_SHARED_CLIENT="lua_shared.so"'}
@@ -240,7 +240,7 @@ function PROJECT()
 	configuration 		"windows"
 		targetsuffix 	"_win32"
 		
-	configuration 		"not windows"
+	configuration 		"linux"
 		targetsuffix 	"_linux"
 		targetextension ".dll"
 	
