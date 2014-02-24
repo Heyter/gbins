@@ -1,4 +1,5 @@
-#include <common/GMLuaModule.h>
+
+#include "ILuaModuleManager.h"
 
 #ifdef _LINUX
 #define ENGINE_LIB "engine_srv.so"

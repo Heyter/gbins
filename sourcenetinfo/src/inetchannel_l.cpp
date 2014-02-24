@@ -1,4 +1,5 @@
-#include <common/GMLuaModule.h>
+
+#include "ILuaModuleManager.h"
 
 #include <inetchannel.h>
 #include <inetmessage.h>

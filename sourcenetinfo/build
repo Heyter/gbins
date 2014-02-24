@@ -1,0 +1,4 @@
+#!/bin/bash
+
+. ../build_helper.sh
+make --directory=linux/gmake verbose=1

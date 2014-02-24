@@ -1,6 +1,14 @@
+
+-- http://industriousone.com/scripting-reference --
+
 dofile("settings.lua")
-print("SRCDS_DIR",SRCDS_DIR)
-print("SOURCE_SDK",SOURCE_SDK)
+
+function checkdir(dir)
+	if not os.isdir(dir) then
+		error("Directory does not exist: "..dir)
+	end
+end
+
 
 function HDB(name)
 	local f=_G[name]
@@ -32,6 +40,14 @@ GARRYSMOD_INCLUDES_PATH = "../gmod-module-base/include"
 BACKWARDS_HEADERS = "../backwards_headers"
 HOOKING = "../hooking"
 SIGSCANNING = "../sigscanning"
+
+--Relative path doesnt work???
+--checkdir(GARRYSMOD_INCLUDES_PATH)
+--checkdir(BACKWARDS_HEADERS)
+--checkdir(HOOKING)
+--checkdir(SIGSCANNING)
+--checkdir(SOURCE_SDK)
+--checkdir(SRCDS_DIR)
 
 PROJECT_FOLDER = os.get() .. "/" .. _ACTION
 local _INCLUDE_SDK=false
@@ -140,7 +156,7 @@ function SOLUTION(name)
 	solution	(name)
 	language	("C++")
 	location	(PROJECT_FOLDER)
-	flags		{"ExtraWarnings","NoPCH", "EnableSSE2","EnableSSE"}
+	flags		{"Optimize","ExtraWarnings","NoPCH", "EnableSSE2","EnableSSE"}
 	if not runtime_required then
 		flags	{"StaticRuntime"}
 	end
