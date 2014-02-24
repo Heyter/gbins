@@ -12,22 +12,23 @@
 
 #undef _UNICODE
 
+
+#include "filesystem.h"
+
 #ifndef _LINUX
 	#include <windows.h>
 #endif
 
 //String stuff
-#include <string>
-#include <sstream>
 
 #ifndef _LINUX
 	#include "vfnhook.h"
 #endif
 
+
 //Lua module interface
 #include "ILuaModuleManager.h"
 
-#include "filesystem.h"
 
 #ifdef CLIENT_DLL
 	#include "cdll_client_int.h"
@@ -35,6 +36,12 @@
 
 #include "networkstringtabledefs.h"
 #include "mathlib/mathlib.h"
+
+#undef min 
+#undef max
+#include <string>
+#include <sstream>
+
 
 ILuaInterface* gLua = NULL;
 #ifdef CLIENT_DLL
@@ -588,20 +595,3 @@ int Shutdown(lua_State *L) {
 #endif
 	return 0;
 }
-
-BOOLEAN WINAPI DllMain( IN HINSTANCE hDllHandle, 
-         IN DWORD     nReason, 
-         IN LPVOID    Reserved ) {
-
-  switch ( nReason )
-   {
-    case DLL_PROCESS_ATTACH:
-      DisableThreadLibraryCalls( hDllHandle );
-      break;
-    case DLL_PROCESS_DETACH:
-      break;
-   }
-
-  return true;
-
- }

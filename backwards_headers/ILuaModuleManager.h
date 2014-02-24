@@ -3,6 +3,8 @@
 
 #include "LuaInterface.h"
 #include "ILuaInterface.h"
+#undef min
+#undef max
 #include <map>
 
 class ILuaModuleManager
@@ -21,12 +23,12 @@ extern ILuaModuleManager* modulemanager;
 #define GMOD_MODULE( _startfunction_, _closefunction_ ) \
 	int _startfunction_( lua_State* L );\
 	int _closefunction_( lua_State* L );\
-	DLL_EXPORT int gmod13_open( lua_State* L ) \
+	_DLL_EXPORT_ int gmod13_open( lua_State* L ) \
 	{ \
 		modulemanager->CreateInterface(L);\
 		return _startfunction_(L);\
 	} \
-	DLL_EXPORT int gmod13_close( lua_State* L ) \
+	_DLL_EXPORT_ int gmod13_close( lua_State* L ) \
 	{ \
 		int ret = _closefunction_(L);\
 		modulemanager->DestroyInterface(L);\

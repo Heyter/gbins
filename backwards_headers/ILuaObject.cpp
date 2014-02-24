@@ -1,5 +1,7 @@
 #include "ILuaObject.h"
 #include "UserData.h"
+#undef min
+#undef max
 #include <sstream>
 
 ILuaObject::ILuaObject( ILuaBase* lua, int iRef ) : m_pLua(lua), m_iRef(iRef)

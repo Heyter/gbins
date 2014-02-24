@@ -156,7 +156,7 @@ function SOLUTION(name)
 	solution	(name)
 	language	("C++")
 	location	(PROJECT_FOLDER)
-	flags		{"Optimize","ExtraWarnings","NoPCH", "EnableSSE2","EnableSSE"}
+	flags		{"NoPCH", "EnableSSE2","EnableSSE"}
 	if not runtime_required then
 		flags	{"StaticRuntime"}
 	end
@@ -188,8 +188,8 @@ function LINUX()
 		defines 	{'LUA_SHARED_CLIENT="lua_shared.so"'}
 		defines		{"POSIX","_POSIX","LINUX","_LINUX","GNUC","NO_MALLOC_OVERRIDE"}
 		linkoptions	{"-Wl,-z,defs"}
-		links		{"rt"}
 		libdirs		{SRCDS_DIR..'/bin'}
+		links		{"rt","dl"}
 end
 
 
@@ -207,7 +207,7 @@ function PROJECT()
 				"VERSION_SAFE_STEAM_API_INTERFACES",
 				"VECTOR",
 				"NO_STRING_T",
-				"NO_SDK",
+				--"NO_SDK",
 				"COMPILER_MSVC32",
 				"_CRT_NONSTDC_NO_DEPRECATE",
 				"_CRT_SECURE_NO_DEPRECATE",

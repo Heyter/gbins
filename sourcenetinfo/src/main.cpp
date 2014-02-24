@@ -1,5 +1,4 @@
 
-#include "ILuaModuleManager.h"
 
 #ifdef _LINUX
 #define ENGINE_LIB "engine_srv.so"
@@ -7,16 +6,18 @@
 #define ENGINE_LIB "engine.dll"
 #endif
 
-GMOD_MODULE(Open, Close)
-
-ILuaInterface *gLua = NULL;
 
 #include <eiface.h>
 #include <cdll_int.h>
 #include <inetchannelinfo.h>
 #include <inetchannel.h>
 
+#include "ILuaModuleManager.h"
 #include "inetchannel_l.h"
+
+GMOD_MODULE(Open, Close)
+
+ILuaInterface *gLua = NULL;
 
 IVEngineServer *sv_engine = NULL;
 

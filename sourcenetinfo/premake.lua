@@ -14,7 +14,8 @@ SOLUTION"sourcenetinfo"
 	WINDOWS()
 	
 	LINUX()
-
+		links{"dl"}
+		
 	PROJECT()
 		SOURCE_SDK_LINKS()
 		configuration 		"windows"

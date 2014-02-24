@@ -10,6 +10,8 @@ struct LuaKeyValue
 };
 
 #ifndef NO_SDK
+	#undef min
+	#undef max
 	#include "tier1/utlvector.h"
 	typedef CUtlVector<LuaKeyValue> CUtlLuaVector;
 
