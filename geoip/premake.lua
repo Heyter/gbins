@@ -10,7 +10,7 @@ SOLUTION"geoip"
 	WINDOWS()
 		libdirs		{"geoip/libGeoIP"}
 		includedirs	{"geoip/libGeoIP"}
-		links		{"Ws2_32","GeoIP"}
+		links		{"Ws2_32","GeoIP.lib"}
 	
 	LINUX()
 		libdirs		{"libGeoIP","geoip/lib"}

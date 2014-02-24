@@ -155,8 +155,18 @@ function SOLUTION(name)
 	_SOLUTION_NAME=name
 	solution	(name)
 	language	("C++")
+	if platforms then
+		platforms { "Windows" }
+	end
 	location	(PROJECT_FOLDER)
-	flags		{"NoPCH", "EnableSSE2","EnableSSE"}
+	flags		{"NoPCH"}
+	
+	if vectorextensions then
+		vectorextensions "SSE2"
+	else
+		flags {"EnableSSE2","EnableSSE"}
+	end
+	
 	if not runtime_required then
 		flags	{"StaticRuntime"}
 	end

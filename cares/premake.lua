@@ -1,5 +1,9 @@
 dofile("../common.lua")
 
+--RequireDefaultlibs()
+--RequireRuntime()
+
+
 SOLUTION"cares"
 	
 	targetdir	"Release"
@@ -11,8 +15,8 @@ SOLUTION"cares"
 	WINDOWS()
 		defines		{"USE_WINSOCK"}
 		libdirs		{"cares/msvc100/cares/lib-release/","cares/msvc100/cares/lib-release/lib/"}
-		links		{"Ws2_32","libcares"}
-	
+		links		{"Ws2_32","libcares","tier0"}
+		
 	LINUX()
 		libdirs		{"cares/.libs"}
 		links_static "cares"
