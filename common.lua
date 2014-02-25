@@ -4,8 +4,8 @@
 dofile("settings.lua")
 
 function checkdir(dir)
-	if not os.isdir(dir) and not os.isdir(path.getabsolute(dir,".")) then
-		error("Directory does not exist: "..dir..' - '..path.getabsolute(dir,"."))
+	if not os.isdir(dir) then
+		error("Directory does not exist: "..dir)
 	end
 end
 
@@ -36,19 +36,25 @@ HDB("project"      )
 HDB("files"        )
 HDB("targetname"   )
 
-GARRYSMOD_INCLUDES_PATH = "../gmod-module-base/include"
-BACKWARDS_HEADERS = "../backwards_headers"
-HOOKING = "../hooking"
-SIGSCANNING = "../sigscanning"
-LUA51 = "../lua51"
+local function fixdir(dir) return path.getabsolute(dir,".") end
 
---Relative path doesnt work???
+GARRYSMOD_INCLUDES_PATH = 	fixdir "../gmod-module-base/include"
+BACKWARDS_HEADERS = 		fixdir "../backwards_headers"
+HOOKING = 					fixdir "../hooking"
+SIGSCANNING = 				fixdir "../sigscanning"
+LUA51 = 					fixdir "../lua51"
+
+--Relative paths
 checkdir(GARRYSMOD_INCLUDES_PATH)
 checkdir(BACKWARDS_HEADERS)
 checkdir(HOOKING)
 checkdir(SIGSCANNING)
+SOURCE_SDK=fixdir(SOURCE_SDK)
 checkdir(SOURCE_SDK)
+SRCDS_DIR=fixdir(SRCDS_DIR)
 checkdir(SRCDS_DIR)
+STEAMWORKS_SDK=fixdir(STEAMWORKS_SDK)
+checkdir(STEAMWORKS_SDK)
 
 PROJECT_FOLDER = os.get() .. "/" .. _ACTION
 
