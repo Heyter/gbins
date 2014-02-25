@@ -1,9 +1,9 @@
 local windows = os.get():find"windows" 
 local mac = false
 SOURCE_SDK = 
-	windows and	[[../source-sdk-2013-master/mp/src]]	-- windows
-	or (mac	and	[[/path/to]]) -- mac
-			or	[[../source-sdk-2013-master/mp/src]] -- linux
+	windows and	[[source-sdk-2013-master/mp/src]]	-- windows
+	or (mac	and	[[source-sdk-2013-master/mp/src]]) -- mac
+			or	[[source-sdk-2013-master/mp/src]] -- linux
 
 SRCDS_DIR = 
 	windows	and	[[x:/g/srcds/steamapps/common/GarrysModDS]]

@@ -1,5 +1,6 @@
 
 -- http://industriousone.com/scripting-reference --
+-- https://bitbucket.org/premake/premake-dev/wiki --
 
 dofile("settings.lua")
 
@@ -36,25 +37,21 @@ HDB("project"      )
 HDB("files"        )
 HDB("targetname"   )
 
-local function fixdir(dir) return path.getabsolute(dir,".") end
-
-GARRYSMOD_INCLUDES_PATH = 	fixdir "../gmod-module-base/include"
-BACKWARDS_HEADERS = 		fixdir "../backwards_headers"
-HOOKING = 					fixdir "../hooking"
-SIGSCANNING = 				fixdir "../sigscanning"
-LUA51 = 					fixdir "../lua51"
+local function fixdir(dir) 
+	dir = path.getabsolute(dir) 
+	checkdir(dir)
+	return dir
+end
 
 --Relative paths
-checkdir(GARRYSMOD_INCLUDES_PATH)
-checkdir(BACKWARDS_HEADERS)
-checkdir(HOOKING)
-checkdir(SIGSCANNING)
-SOURCE_SDK=fixdir(SOURCE_SDK)
-checkdir(SOURCE_SDK)
-SRCDS_DIR=fixdir(SRCDS_DIR)
-checkdir(SRCDS_DIR)
-STEAMWORKS_SDK=fixdir(STEAMWORKS_SDK)
-checkdir(STEAMWORKS_SDK)
+GARRYSMOD_INCLUDES_PATH	= fixdir "gmod-module-base/include"
+BACKWARDS_HEADERS  		= fixdir "backwards_headers"
+HOOKING  				= fixdir "hooking"
+SIGSCANNING 			= fixdir "sigscanning"
+LUA51 					= fixdir "lua51"
+SOURCE_SDK				= fixdir (SOURCE_SDK)
+SRCDS_DIR				= fixdir (SRCDS_DIR)
+STEAMWORKS_SDK			= fixdir (STEAMWORKS_SDK)
 
 PROJECT_FOLDER = os.get() .. "/" .. _ACTION
 
@@ -241,22 +238,21 @@ function PROJECT()
 				--"_snprintf=use_Q_snprintf_instead",
 				--"fopen=dont_use_fopen",
 			}
-			
+
 	files	{"src/*.cpp"}
 
-	targetprefix		"gmsv_"
-	
+	targetprefix			"gmsv_"
 
 	if IsIncluded"backwards_headers" then
-		files{BACKWARDS_HEADERS.."/*.cpp"}
+		files {BACKWARDS_HEADERS.."/*.cpp"}
 	end
 	
-	configuration 		"windows"
-		targetsuffix 	"_win32"
+	configuration 			"windows"
+		targetsuffix 		"_win32"
 		
-	configuration 		"linux"
-		targetsuffix 	"_linux"
-		targetextension ".dll"
+	configuration 			"linux"
+		targetsuffix 		"_linux"
+		targetextension 	".dll"
 		postbuildcommands { "strip --keep-file-symbols --strip-debug -p %{cfg.linktarget.relpath}" }
 	
 	project(_SOLUTION_NAME)
