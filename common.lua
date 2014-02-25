@@ -4,8 +4,8 @@
 dofile("settings.lua")
 
 function checkdir(dir)
-	if not os.isdir(dir) then
-		error("Directory does not exist: "..dir)
+	if not os.isdir(dir) and not os.isdir(path.getabsolute(dir,".")) then
+		error("Directory does not exist: "..dir..' - '..path.getabsolute(dir,"."))
 	end
 end
 
@@ -42,12 +42,12 @@ HOOKING = "../hooking"
 SIGSCANNING = "../sigscanning"
 
 --Relative path doesnt work???
---checkdir(GARRYSMOD_INCLUDES_PATH)
---checkdir(BACKWARDS_HEADERS)
---checkdir(HOOKING)
---checkdir(SIGSCANNING)
---checkdir(SOURCE_SDK)
---checkdir(SRCDS_DIR)
+checkdir(GARRYSMOD_INCLUDES_PATH)
+checkdir(BACKWARDS_HEADERS)
+checkdir(HOOKING)
+checkdir(SIGSCANNING)
+checkdir(SOURCE_SDK)
+checkdir(SRCDS_DIR)
 
 PROJECT_FOLDER = os.get() .. "/" .. _ACTION
 local _INCLUDE_SDK=false
@@ -159,7 +159,10 @@ function SOLUTION(name)
 		platforms { "x32" }
 	end
 	location	(PROJECT_FOLDER)
-	flags		{"NoPCH"}
+	if optimize then
+		optimize"On"
+	end
+	flags		{"NoPCH","Symbols"}
 	
 	if vectorextensions then
 		vectorextensions "SSE2"
@@ -243,6 +246,7 @@ function PROJECT()
 	configuration 		"linux"
 		targetsuffix 	"_linux"
 		targetextension ".dll"
+		postbuildcommands { "strip --keep-file-symbols --strip-debug -p %{cfg.linktarget.relpath}" }
 	
 	project(_SOLUTION_NAME)
 	
