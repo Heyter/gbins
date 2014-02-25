@@ -40,6 +40,7 @@ GARRYSMOD_INCLUDES_PATH = "../gmod-module-base/include"
 BACKWARDS_HEADERS = "../backwards_headers"
 HOOKING = "../hooking"
 SIGSCANNING = "../sigscanning"
+LUA51 = "../lua51"
 
 --Relative path doesnt work???
 checkdir(GARRYSMOD_INCLUDES_PATH)
@@ -50,10 +51,6 @@ checkdir(SOURCE_SDK)
 checkdir(SRCDS_DIR)
 
 PROJECT_FOLDER = os.get() .. "/" .. _ACTION
-local _INCLUDE_SDK=false
-local _INCLUDE_GMOD=false
-local _INCLUDE_BACKWARDS=false
-local _INCLUDE_STEAMWORKS=false
 
 SOURCE_SDK_INCLUDES={
 	SOURCE_SDK.."/public",
@@ -129,6 +126,14 @@ local include_helpers = {
 	steamworks={
 		func = function(_)
 			error"todo"
+		end,
+	},
+	lua51={
+		func = function(_,i)
+			includedirs{LUA51..'/src'}
+			if i then
+				files{LUA51..'/src/*.c'}
+			end
 		end,
 	},
 }
