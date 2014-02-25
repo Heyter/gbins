@@ -1,0 +1,1 @@
+git clone --depth 0 https://github.com/diegonehab/luasocket.git

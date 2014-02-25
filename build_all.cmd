@@ -1,5 +1,6 @@
 @echo Building all...
 @echo off
+@cd /d %~dp0
 
  
 for /f %%i in ('dir . /ad /b') do (
