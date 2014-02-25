@@ -5,5 +5,3 @@ mkdir cares || rm -rf cares/*
 mv c-ares-1.10.0/* cares/
 rmdir c-ares-1.10.0
 rm -f c-ares-1.10.0.tar
-cd cares
-start .

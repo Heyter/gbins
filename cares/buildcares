@@ -1,3 +1,2 @@
 cd cares
-./configure
-make
+./configure && make
