@@ -4,11 +4,10 @@ RequireDefaultlibs()
 --RequireRuntime()
 
 
-SOLUTION"luafilesystem"
+SOLUTION"luaio"
 	language"C"
 	targetdir	"Release"
 	INCLUDES	"lua51"
-	includedirs	{"luafilesystem/src"}
 	defines		{"NDEBUG"}
 	
 	WINDOWS()
@@ -18,7 +17,6 @@ SOLUTION"luafilesystem"
 	PROJECT()
 		files	{"src/*.c"}
 		files	{LUA51.."/src/liolib.c"}
-		--files	{"luafilesystem/src/lfs.c"}
 
 		INCLUDES	"lua51"
 		
