@@ -11,7 +11,7 @@ function checkdir(dir)
 end
 
 
-function HDB(name)
+function dbg_hook(name)
 	local f=_G[name]
 	_G[name] = function(a,...)
 		if type(a)=="string" then
@@ -23,19 +23,19 @@ function HDB(name)
 	end
 end
 
-HDB("links"        )
-HDB("targetdir"    )
-HDB("location"     )
-HDB("libdirs"      )
-HDB("configuration")
-HDB("flags"        )
-HDB("solution"     )
-HDB("defines"      )
-HDB("includedirs"  )
-HDB("linkoptions"  )
-HDB("project"      )
-HDB("files"        )
-HDB("targetname"   )
+dbg_hook "links"        
+dbg_hook "targetdir"    
+dbg_hook "location"     
+dbg_hook "libdirs"      
+dbg_hook "configuration"
+dbg_hook "flags"        
+dbg_hook "solution"     
+dbg_hook "defines"      
+dbg_hook "includedirs"  
+dbg_hook "linkoptions"  
+dbg_hook "project"      
+dbg_hook "files"        
+dbg_hook "targetname"   
 
 local function fixdir(dir) 
 	dir = path.getabsolute(dir) 
@@ -68,6 +68,7 @@ SOURCE_SDK_INCLUDES={
 	SOURCE_SDK.."/game/server",
 	SOURCE_SDK.."/game/client",
 }
+
 function SOURCE_SDK_LINKS()
 	local cfg = configuration()
 	configuration 		"windows"
@@ -134,8 +135,10 @@ local include_helpers = {
 	lua51={
 		func = function(_,i)
 			includedirs{LUA51..'/src'}
+			libdirs{LUA51} -- lua_shared
 			if i then
-				files{LUA51..'/src/*.c'}
+				error"TODO?"
+				--files{LUA51..'/src/*.c'}
 			end
 		end,
 	},
