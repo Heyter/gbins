@@ -132,17 +132,23 @@ local include_helpers = {
 			error"todo"
 		end,
 	},
-	lua51={
+	lua51={ -- gmod lua 5.1 compat
 		func = function(_,i)
 			includedirs{LUA51..'/src'}
 			libdirs{LUA51} -- lua_shared
 			if i then
-				error"TODO?"
-				--files{LUA51..'/src/*.c'}
+				configuration 		"windows"
+					links			{"lua_shared"}
+				configuration 		"linux"
+					linkoptions		{"-Wl,-rpath='$$ORIGIN'"}
+					linkoptions		{"garrysmod/bin/lua_shared_srv.so"}
+					prelinkcommands	{"mkdir -p garrysmod/bin && ln -s "..SRCDS_DIR.."/garrysmod/bin/lua_shared_srv.so garrysmod/bin/lua_shared_srv.so "}
+					
 			end
 		end,
 	},
 }
+
 function INCLUDES(what)
 	local t = include_helpers[what]
 	if not t then error("Not found: "..what) end
@@ -150,6 +156,8 @@ function INCLUDES(what)
 	print("Including "..what,included and "REINCLUDE!?!?" or "")
 	t:func(included)
 	t.included = true
+	--Should we ?
+	--configuration 		{}
 end
 function IsIncluded(what)
 	local t = include_helpers[what]
