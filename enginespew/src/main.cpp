@@ -75,7 +75,6 @@ SpewRetval_t LuaSpew( SpewType_t spewType, const char *pMsg )
 					return g_fnOldSpew( spewType, pMsg );
 				}
 				
-					
 				if( LUA->IsType( -1, GarrysMod::Lua::Type::BOOL ) && LUA->GetBool( ) )
 				{
 					LUA->Pop( 3 );
@@ -83,9 +82,11 @@ SpewRetval_t LuaSpew( SpewType_t spewType, const char *pMsg )
 					return SPEW_CONTINUE;
 				}
 				
-			LUA->Pop( 1 );
-		LUA->Pop( 1 );
-	LUA->Pop( 1 );
+			//LUA->Pop( 1 );
+		//LUA->Pop( 1 );
+	//LUA->Pop( 1 );
+	LUA->Pop( 3 );
+	
 	inspew=false;
 	
 	return g_fnOldSpew( spewType, pMsg );

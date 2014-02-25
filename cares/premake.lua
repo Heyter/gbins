@@ -6,7 +6,6 @@ dofile("../common.lua")
 
 SOLUTION"cares"
 	
-	targetdir	"Release"
 	INCLUDES	"source_sdk"
 	INCLUDES	"backwards_headers"
 	includedirs	{"cares/"}
