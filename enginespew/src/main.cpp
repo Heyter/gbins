@@ -69,7 +69,7 @@ SpewRetval_t LuaSpew( SpewType_t spewType, const char *pMsg )
 				// hook.Run("EngineSpew",0,"","",0,0,0,0);
 				if( LUA->PCall( 8, 1, 0 ) != 0 )
 				{
-					DevWarning( "[EngineSpew error] %s\n", LUA->GetString( ) );
+					Warning( "[EngineSpew error] %s\n", LUA->GetString( ) );
 					LUA->Pop( 3 );
 					inspew = false;
 					return g_fnOldSpew( spewType, pMsg );
