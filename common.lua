@@ -86,6 +86,7 @@ function SOURCE_SDK_LINKS()
 end
 
 local include_helpers = {
+	
 	source_sdk={
 		func = function(_)		
 			libdirs{
@@ -96,17 +97,20 @@ local include_helpers = {
 			includedirs(SOURCE_SDK_INCLUDES)
 		end,
 	},
+	
 	gmod_sdk={
 		func = function(_)
 			includedirs{GARRYSMOD_INCLUDES_PATH}	
 		end,
 	},	
+	
 	backwards_headers={
 		func = function(_)
 			includedirs{BACKWARDS_HEADERS}
 			libdirs{BACKWARDS_HEADERS}
 		end,
 	},
+	
 	hooking={
 		func = function(_,i)
 			includedirs{HOOKING}
@@ -116,6 +120,7 @@ local include_helpers = {
 			end
 		end,
 	},
+	
 	sigscanning={
 		func = function(_,i)
 			includedirs{SIGSCANNING}
@@ -127,11 +132,19 @@ local include_helpers = {
 			end
 		end,
 	},
+	
 	steamworks={
-		func = function(_)
-			error"todo"
+		func = function(_,i)
+			includedirs{STEAMWORKS_SDK..'/public/steam'}
+			if i then
+				libdirs	{
+							STEAMWORKS_SDK..'/redistributable_bin',
+							STEAMWORKS_SDK..'/redistributable_bin/linux32'
+						}
+			end
 		end,
 	},
+	
 	lua51={ -- gmod lua 5.1 compat
 		func = function(_,i)
 			includedirs{LUA51..'/src'}
@@ -140,6 +153,7 @@ local include_helpers = {
 				configuration 		"windows"
 					links			{"lua_shared"}
 				configuration 		"linux"
+					-- massive hack, but it works just the way I wanted it to
 					linkoptions		{"-Wl,-rpath='$$ORIGIN'"}
 					linkoptions		{"garrysmod/bin/lua_shared_srv.so"}
 					prelinkcommands	{"mkdir -p garrysmod/bin && ln -s "..SRCDS_DIR.."/garrysmod/bin/lua_shared_srv.so garrysmod/bin/lua_shared_srv.so "}
@@ -147,6 +161,7 @@ local include_helpers = {
 			end
 		end,
 	},
+	
 }
 
 function INCLUDES(what)
