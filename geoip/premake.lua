@@ -13,7 +13,7 @@ SOLUTION"geoip"
 		links		{"Ws2_32","GeoIP.lib"}
 	
 	LINUX()
-		libdirs		{"libGeoIP","geoip/lib"}
+		libdirs		{"geoip/libGeoIP/.libs","geoip/libGeoIP","libGeoIP","geoip/lib"}
 		links_static "GeoIP"
 
 	PROJECT()
