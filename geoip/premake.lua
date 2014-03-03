@@ -1,5 +1,7 @@
 dofile("../common.lua")
 
+RequireDefaultlibs()
+
 SOLUTION"geoip"
 	
 	targetdir	"Release"
