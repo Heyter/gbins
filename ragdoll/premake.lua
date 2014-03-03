@@ -7,7 +7,7 @@ SOLUTION"ragdoll"
 	targetdir	"Release"
 	INCLUDES	"source_sdk"
 	INCLUDES	"gmod_sdk"
-	defines		{"NDEBUG"}
+	defines		{"NDEBUG","GMMODULE","GAME_DLL"}
 	
 	WINDOWS()
 	LINUX()

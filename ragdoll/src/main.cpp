@@ -1,15 +1,7 @@
 #undef _UNICODE
 
-#pragma comment(lib,"mathlib.lib")
-#pragma comment(lib,"tier0.lib")
-#pragma comment(lib,"tier1.lib")
-#pragma comment(lib,"tier2.lib")
-#pragma comment(lib,"vstdlib.lib")
-
-#define GMMODULE
 #include "GarrysMod\Lua\Interface.h"
 
-#define GAME_DLL
 #include "cbase.h"
 #include "vphysics_interface.h"
 #include "datacache\imdlcache.h"
