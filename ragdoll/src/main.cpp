@@ -1,18 +1,37 @@
 #undef _UNICODE
 
-#include "GarrysMod\Lua\Interface.h"
+#ifdef _WIN32
+	#define DATACACHE_DLL "datacache.dll"
+#else
+	#define DATACACHE_DLL "datacache_srv.so"
+#endif
+
+#ifdef _WIN32
+	#define ENGINE_DLL "engine.dll"
+#else
+	#define ENGINE_DLL "engine_srv.so"
+#endif
+
+#ifdef _WIN32
+	#define VPHYSICS_DLL "vphysics.dll"
+#else
+	#define VPHYSICS_DLL "vphysics_srv.so"
+#endif
+
 
 #include "cbase.h"
 #include "vphysics_interface.h"
-#include "datacache\imdlcache.h"
+#include "datacache/imdlcache.h"
 #include "physics_prop_ragdoll.h"
-#include "vphysics\constraints.h"
+#include "vphysics/constraints.h"
 #include "physics_saverestore.h"
 #include "vcollide_parse.h"
-#include "vphysics\collision_set.h"
-#include "datacache\imdlcache.h"
+#include "vphysics/collision_set.h"
+#include "datacache/imdlcache.h"
 #include "physics_shared.h"
 #include "ragdoll_shared.h"
+
+#include <GarrysMod/Lua/Interface.h>
 
 using namespace GarrysMod::Lua;
 
@@ -61,7 +80,7 @@ LUA_FUNC(RemovePhysicsObject);
 
 GMOD_MODULE_OPEN()
 {
-	CreateInterfaceFn i_vphysics = Sys_GetFactory("vphysics.dll");
+	CreateInterfaceFn i_vphysics = Sys_GetFactory(VPHYSICS_DLL);
 
 	if (!i_vphysics)
 	{
@@ -87,7 +106,7 @@ GMOD_MODULE_OPEN()
 		return 0;
 	}
 
-	CreateInterfaceFn i_datacache = Sys_GetFactory("datacache.dll");
+	CreateInterfaceFn i_datacache = Sys_GetFactory(DATACACHE_DLL);
 
 	if (!i_datacache)
 	{
@@ -103,7 +122,7 @@ GMOD_MODULE_OPEN()
 		return 0;
 	}
 
-	CreateInterfaceFn i_engine = Sys_GetFactory("engine.dll");
+	CreateInterfaceFn i_engine = Sys_GetFactory(ENGINE_DLL);
 
 	if (!i_engine)
 	{

@@ -15,12 +15,14 @@
 			GarrysMod::Lua::ILuaBase*	luabase;
 		};
 
-		#ifdef _WIN32
-			#define  DLL_EXPORT extern "C" __declspec( dllexport )
-		#else
-			#define DLL_EXPORT	extern "C" __attribute__((visibility("default")))	
+		#ifndef DLL_EXPORT 
+			#ifdef _WIN32
+				#define  DLL_EXPORT extern "C" __declspec( dllexport )
+			#else
+				#define DLL_EXPORT	extern "C" __attribute__((visibility("default")))	
+			#endif
 		#endif
-
+		
 		#define GMOD_MODULE_OPEN()	DLL_EXPORT int gmod13_open( lua_State* state )
 		#define GMOD_MODULE_CLOSE()	DLL_EXPORT int gmod13_close( lua_State* state )
 
