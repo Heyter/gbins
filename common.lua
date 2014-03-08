@@ -191,10 +191,13 @@ function SOLUTION(name)
 	_SOLUTION_NAME=name
 	solution	(name)
 	language	("C++")
+	location	(PROJECT_FOLDER)
+	targetdir	"Release"
+	
 	if platforms then
 		platforms { "x32" }
 	end
-	location	(PROJECT_FOLDER)
+	
 	if optimize then
 		optimize"On"
 	end
