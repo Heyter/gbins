@@ -37,9 +37,11 @@ dbg_hook "project"
 dbg_hook "files"        
 dbg_hook "targetname"   
 
-local function fixdir(dir) 
+local function fixdir(dir,nocheck) 
 	dir = path.getabsolute(dir) 
-	checkdir(dir)
+	if not nocheck then
+		checkdir(dir)
+	end
 	return dir
 end
 
@@ -97,7 +99,6 @@ local include_helpers = {
 			includedirs(SOURCE_SDK_INCLUDES)
 		end,
 	},
-	
 	gmod_sdk={
 		func = function(_)
 			includedirs{GARRYSMOD_INCLUDES_PATH}	
@@ -135,6 +136,7 @@ local include_helpers = {
 	
 	steamworks={
 		func = function(_,i)
+			includedirs{STEAMWORKS_SDK..'/public'}
 			includedirs{STEAMWORKS_SDK..'/public/steam'}
 			if i then
 				libdirs	{
@@ -221,7 +223,7 @@ function RequireDefaultlibs()
 end
 function WINDOWS()
 	configuration	("windows")
-		defines		{"WIN32","_WIN32","_WINDOWS"}		
+		defines		{"COMPILER_MSVC32","WIN32","_WIN32","_WINDOWS"}		
 		defines 	{'SERVER_BIN="server.dll"'}
 		if not defaultlibs_required then
 			linkoptions	{ "/nodefaultlib:\"libcmt\"", "/nodefaultlib:\"libcmtd\"" }
@@ -233,7 +235,7 @@ function LINUX()
 		defines 	{'SERVER_BIN="server_srv.so"'}
 		defines 	{'LUA_SHARED="lua_shared_srv.so"'}
 		defines 	{'LUA_SHARED_CLIENT="lua_shared.so"'}
-		defines		{"POSIX","_POSIX","LINUX","_LINUX","GNUC","NO_MALLOC_OVERRIDE"}
+		defines		{"COMPILER_GCC","POSIX","_POSIX","LINUX","_LINUX","GNUC","NO_MALLOC_OVERRIDE"}
 		linkoptions	{"-Wl,-z,defs"}
 		libdirs		{SRCDS_DIR..'/bin'}
 		links		{"rt","dl"}
@@ -255,7 +257,6 @@ function PROJECT()
 				"VECTOR",
 				"NO_STRING_T",
 				--"NO_SDK",
-				"COMPILER_MSVC32",
 				"_CRT_NONSTDC_NO_DEPRECATE",
 				"_CRT_SECURE_NO_DEPRECATE",
 				"RAD_TELEMETRY_DISABLED",

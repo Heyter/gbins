@@ -12,6 +12,8 @@
 #include "strtools.h"
 
 
+#define LUA_FUNCTION( _function_ ) int _function_( lua_State* state )
+
 #include <stdlib.h>
 #ifndef WINDOWS
         #define _atoi64(S)  atoll(S)

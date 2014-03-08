@@ -11,7 +11,7 @@ SRCDS_DIR =
 			or	[[/home/srcds/srcds/orangebox]]
 
 STEAMWORKS_SDK = 
-	windows	and	[[x:/dl/steamworks_128/public]] 
-	or (mac	and	[[/path/to]])
-			or	[[/home/srcds/dev/steamworks_sdk/public]]
+	windows	and	[[steamworks_sdk]] 
+	or (mac	and	[[steamworks_sdk]])
+			or	[[steamworks_sdk]]
 
