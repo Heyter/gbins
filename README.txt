@@ -29,7 +29,7 @@ Things you may want to execute:
 
 
 Credits/Copyright: The people appearing in the SVN history and...
-	Middle finger to Garry for making us do this in the first hand
+	Middle finger to Garry for making us do this in the first place
 	Big thanks to danielga for lua_shared dumping help
 	Blackawps for backwars_headers
 	thanks to premake for bowing at lua

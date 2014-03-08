@@ -54,13 +54,15 @@ void lhook_end()
 };
 
 bool lhook_call() {
-	lhook_call(0);
+	bool ret = lhook_call(0);
 	lhook_end();
+	return ret;
 };
 
 // legacy
 bool lhook_call(unsigned int numargs,unsigned int rets) {
-	lhook_call(rets);
+	bool ret = lhook_call(rets);
+	return ret;
 };
 
 bool lhook_call(unsigned int rets) {

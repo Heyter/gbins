@@ -15,7 +15,7 @@
 #define LUA_FUNCTION( _function_ ) int _function_( lua_State* state )
 
 #include <stdlib.h>
-#ifndef WINDOWS
+#ifndef _WIN32
         #define _atoi64(S)  atoll(S)
 #endif
 

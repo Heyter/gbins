@@ -1,6 +1,7 @@
 dofile("../common.lua")
 
-RequireDefaultlibs()
+--RequireDefaultlibs()
+RequireRuntime()
 
 SOLUTION"gameserver"
 	
@@ -19,4 +20,5 @@ SOLUTION"gameserver"
 		SOURCE_SDK_LINKS()
 		configuration 		"windows"
 			links	"steam_api"
+			links		{"Ws2_32"}
 		configuration 		"linux"
