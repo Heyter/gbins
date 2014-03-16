@@ -65,25 +65,21 @@ LUA_FUNCTION(SV_GetNetChannel)
 LUA_FUNCTION(SV_NetChannel)
 {
 	gLua->CheckType(1, Type::NUMBER);
-/*
-	int clientID = gLua->GetInt();
 	
-	for (int i=0; i < pServer->GetClientCount(); i++) {
+	INetChannel *playerNC = (INetChannel *)sv_engine->GetPlayerNetInfo(gLua->GetInteger(1));
+	
+	if (playerNC)
+	{
+		ILuaObject *metaT = gLua->GetMetaTable(INETCHANNEL_NAME, INETCHANNEL_ID);
+			gLua->PushUserData(metaT, playerNC, INETCHANNEL_ID);
+		metaT->UnReference();
+	}
+	else
+	{
+		gLua->PushNil();
+	}
 
-		IClient* client = pServer->GetClient(i);
-
-		if( client->GetUserID() == clientID ) {
-
-			INetChannel *netChan = client->GetNetChannel();
-
-			ILuaObject *metaT = gLua->GetMetaTable(INETCHANNEL_NAME, INETCHANNEL_ID);
-				gLua->PushUserData(metaT, netChan, INETCHANNEL_ID);
-			metaT->UnReference();
-			
-			return 1;
-		}		
-	}	*/
-	return 0;
+	return 1;
 	
 }
 
