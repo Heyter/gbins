@@ -104,7 +104,7 @@ void keep_loaded() {
 		printf("ooo this is bad\n");
 	}
 #else
-	// ????
+	// luckily it seems that linux keeps it loaded.
 #endif
 }
 
@@ -140,32 +140,4 @@ GMOD_MODULE_CLOSE( )
 {
 	luas = NULL;
 	return 0;
-}
-
-
-
-BOOLEAN WINAPI DllMain( IN HINSTANCE hDllHandle, 
-         IN DWORD     nReason, 
-         IN LPVOID    Reserved )
- {
-  
-  switch ( nReason )
-   {
-    case DLL_PROCESS_ATTACH:
-
-      printf("DLL_PROCESS_ATTACH\n");
-
-      break;
-
-    case DLL_PROCESS_DETACH:
-      printf("DLL_PROCESS_DETACH\n");
-
-      break;
-   }
-
-
-
-
-  return TRUE;
-
 }
