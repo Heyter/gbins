@@ -92,7 +92,7 @@ SpewRetval_t LuaSpew( SpewType_t spewType, const char *pMsg )
 	return g_fnOldSpew( spewType, pMsg );
 }
 
-
+/* // this wont work on linux and is probably not valve had in mind... damn hooking
 void keep_loaded() {
 #ifdef _WIN32
 	HMODULE ignore;
@@ -104,7 +104,7 @@ void keep_loaded() {
 		printf("ooo this is bad\n");
 	}
 #else
-	// luckily it seems that linux keeps it loaded.
+	// We need to implement this or shit hits the fan on linux too (naturally)
 #endif
 }
 
@@ -118,8 +118,13 @@ void spew_hook()
 	g_fnOldSpew = GetSpewOutputFunc();
 	keep_loaded();
 	SpewOutputFunc( LuaSpew );
-}
+}*/
 
+void spew_hook() 
+{
+	g_fnOldSpew = GetSpewOutputFunc();
+	SpewOutputFunc( LuaSpew );
+}
 
 GMOD_MODULE_OPEN( )
 {
@@ -139,5 +144,6 @@ GMOD_MODULE_OPEN( )
 GMOD_MODULE_CLOSE( )
 {
 	luas = NULL;
+	SpewOutputFunc( g_fnOldSpew );
 	return 0;
 }
