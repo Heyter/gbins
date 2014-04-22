@@ -92,6 +92,23 @@ SpewRetval_t LuaSpew( SpewType_t spewType, const char *pMsg )
 	return g_fnOldSpew( spewType, pMsg );
 }
 
+
+void keep_loaded() {
+#ifdef _WIN32
+	HMODULE ignore;
+	BOOL wat = GetModuleHandleEx(
+					GET_MODULE_HANDLE_EX_FLAG_PIN|GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, 
+					(LPCSTR)&keep_loaded, 
+					&ignore);
+	if (!wat) {
+		printf("ooo this is bad\n");
+	}
+#else
+	// ????
+#endif
+}
+
+
 void spew_hook() 
 {
 	static bool func_hooked = false;
@@ -99,8 +116,10 @@ void spew_hook()
 	func_hooked = true;
 	
 	g_fnOldSpew = GetSpewOutputFunc();
+	keep_loaded();
 	SpewOutputFunc( LuaSpew );
 }
+
 
 GMOD_MODULE_OPEN( )
 {
@@ -121,4 +140,32 @@ GMOD_MODULE_CLOSE( )
 {
 	luas = NULL;
 	return 0;
+}
+
+
+
+BOOLEAN WINAPI DllMain( IN HINSTANCE hDllHandle, 
+         IN DWORD     nReason, 
+         IN LPVOID    Reserved )
+ {
+  
+  switch ( nReason )
+   {
+    case DLL_PROCESS_ATTACH:
+
+      printf("DLL_PROCESS_ATTACH\n");
+
+      break;
+
+    case DLL_PROCESS_DETACH:
+      printf("DLL_PROCESS_DETACH\n");
+
+      break;
+   }
+
+
+
+
+  return TRUE;
+
 }
