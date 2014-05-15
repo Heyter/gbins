@@ -15,5 +15,4 @@ SOLUTION"ragdoll"
 	PROJECT()
 		SOURCE_SDK_LINKS()
 		configuration 		"windows"
-			--links	"steam_api"
 		configuration 		"linux"
