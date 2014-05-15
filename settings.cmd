@@ -5,11 +5,18 @@
 @echo Found steam at "%STEAMPATH%"
 @set DLLPATH=%STEAMPATH%\steamapps\common\GarrysMod\garrysmod\bin\lua_shared.dll
 
-@rem --------------------------------
-@rem We need VS2010 msbuild and nmake!
 
-@set PATH=%PATH%;%VS100COMNTOOLS%
-@call %VS100COMNTOOLS%\vsvars32.bat
+@IF defined VS100COMNTOOLS @(
+	@set VSTOOLS=%VS100COMNTOOLS%
+	@set VSVER=100
+)
+@IF defined VS120COMNTOOLS @(
+	@set VSTOOLS=%VS120COMNTOOLS%
+	@set VSVER=120
+)
+
+:cont
+@call %VSTOOLS%\vsvars32.bat
 
 @msbuild /? > nul
 @IF ERRORLEVEL 0 GOTO OKAY
