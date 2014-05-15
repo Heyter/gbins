@@ -7,7 +7,7 @@
 #pragma comment(lib,"vstdlib.lib")
 
 #define GMMODULE
-#include "GarrysMod\Lua\Interface.h"
+#include "GarrysMod/Lua/Interface.h"
 
 #ifdef _WIN32
 
@@ -17,20 +17,20 @@
 
 #elif _LINUX
 
-#define VPHYSICS_LIB "vphysics.so"
-#define DATACACHE_LIB "datacache.so"
-#define ENGINE_LIB "engine.so"
+#define VPHYSICS_LIB "vphysics_srv.so"
+#define DATACACHE_LIB "datacache_srv.so"
+#define ENGINE_LIB "engine_srv.so"
 
 #endif
 
 #define GAME_DLL
 #include "cbase.h"
 #include "vphysics_interface.h"
-#include "datacache\imdlcache.h"
+#include "datacache/imdlcache.h"
 #include "physics_prop_ragdoll.h"
-#include "vphysics\constraints.h"
+#include "vphysics/constraints.h"
 #include "vcollide_parse.h"
-#include "datacache\imdlcache.h"
+#include "datacache/imdlcache.h"
 #include "physics_shared.h"
 #include "ragdoll_shared.h"
 
