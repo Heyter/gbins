@@ -1,37 +1,38 @@
 #undef _UNICODE
 
-#ifdef _WIN32
-	#define DATACACHE_DLL "datacache.dll"
-#else
-	#define DATACACHE_DLL "datacache_srv.so"
-#endif
+#pragma comment(lib,"mathlib.lib")
+#pragma comment(lib,"tier0.lib")
+#pragma comment(lib,"tier1.lib")
+#pragma comment(lib,"tier2.lib")
+#pragma comment(lib,"vstdlib.lib")
+
+#define GMMODULE
+#include "GarrysMod\Lua\Interface.h"
 
 #ifdef _WIN32
-	#define ENGINE_DLL "engine.dll"
-#else
-	#define ENGINE_DLL "engine_srv.so"
+
+#define VPHYSICS_LIB "vphysics.dll"
+#define DATACACHE_LIB "datacache.dll"
+#define ENGINE_LIB "engine.dll"
+
+#elif _LINUX
+
+#define VPHYSICS_LIB "vphysics.so"
+#define DATACACHE_LIB "datacache.so"
+#define ENGINE_LIB "engine.so"
+
 #endif
 
-#ifdef _WIN32
-	#define VPHYSICS_DLL "vphysics.dll"
-#else
-	#define VPHYSICS_DLL "vphysics_srv.so"
-#endif
-
-
+#define GAME_DLL
 #include "cbase.h"
 #include "vphysics_interface.h"
-#include "datacache/imdlcache.h"
+#include "datacache\imdlcache.h"
 #include "physics_prop_ragdoll.h"
-#include "vphysics/constraints.h"
-#include "physics_saverestore.h"
+#include "vphysics\constraints.h"
 #include "vcollide_parse.h"
-#include "vphysics/collision_set.h"
-#include "datacache/imdlcache.h"
+#include "datacache\imdlcache.h"
 #include "physics_shared.h"
 #include "ragdoll_shared.h"
-
-#include <GarrysMod/Lua/Interface.h>
 
 using namespace GarrysMod::Lua;
 
@@ -50,107 +51,100 @@ CFunc funcVector;
 #define REG_FUNC(name) LUA->PushCFunction(name); \
 					   LUA->SetField(-2, #name)
 
-bool IsRagdoll(CBaseEntity* pEnt)
+bool IsRagdoll(CBaseEntity* ent)
 {
-	return dynamic_cast<CRagdollProp*>(pEnt) != NULL;
+	return dynamic_cast<CRagdollProp*>(ent) != NULL;
 }
 
-size_t GetData(datamap_t* pMap, const char* szName)
+size_t GetData(datamap_t* map, const char* name)
 {
-	for (int i=0;i<pMap->dataNumFields;i++)
+	for (int i=0;i<map->dataNumFields;i++)
     {
-        if(!pMap->dataDesc[i].fieldName || pMap->dataDesc[i].fieldType == FIELD_VOID)
+        if(!map->dataDesc[i].fieldName || map->dataDesc[i].fieldType == FIELD_VOID)
 		{
 			continue;
 		}
                  
-        if (FStrEq(szName, pMap->dataDesc[i].fieldName))
+        if (FStrEq(name, map->dataDesc[i].fieldName))
         {
-			return pMap->dataDesc[i].fieldOffset[0];
+			return map->dataDesc[i].fieldOffset[0];
         }
     }
     
 	return NULL;
 }
 
-LUA_FUNC(RemoveInternalConstraint);
-LUA_FUNC(AddInternalConstraint);
-LUA_FUNC(GetModelInfo);
-LUA_FUNC(RemovePhysicsObject);
+LUA_FUNC(RemoveConstraints);
+LUA_FUNC(GetConstraintInfo);
 
 GMOD_MODULE_OPEN()
 {
-	CreateInterfaceFn i_vphysics = Sys_GetFactory(VPHYSICS_DLL);
+	CreateInterfaceFn vphysics = Sys_GetFactory(VPHYSICS_LIB);
 
-	if (!i_vphysics)
+	if (!vphysics)
 	{
-		Error("FUCK");
+		Error("gm_dolly: Couldn't create vphysics interface");
 		return 0;
 	}
 
-	physics = (IPhysics*)i_vphysics(VPHYSICS_INTERFACE_VERSION, NULL);
+	physics = (IPhysics*)vphysics(VPHYSICS_INTERFACE_VERSION, NULL);
 
 	if (!physics)
 	{
-		Error("DAMMIT");
+		Error("gm_dolly: Couldn't create IPhysics interface");
 		return 0;
 	}
 
 	physenv = physics->GetActiveEnvironmentByIndex(0);
 	
-	physcollision = (IPhysicsCollision*)i_vphysics(VPHYSICS_COLLISION_INTERFACE_VERSION, NULL);
+	physcollision = (IPhysicsCollision*)vphysics(VPHYSICS_COLLISION_INTERFACE_VERSION, NULL);
 
 	if (!physcollision)
 	{
-		Error("SHIT");
+		Error("gm_dolly: Couldn't create IPhysicsCollision interface");
 		return 0;
 	}
 
-	CreateInterfaceFn i_datacache = Sys_GetFactory(DATACACHE_DLL);
+	CreateInterfaceFn datacache = Sys_GetFactory(DATACACHE_LIB);
 
-	if (!i_datacache)
+	if (!datacache)
 	{
-		Error("DANG");
+		Error("gm_dolly: Couldn't create datacache interface");
 		return 0;
 	}
 
-	mdlcache = (IMDLCache*)i_datacache(MDLCACHE_INTERFACE_VERSION, NULL);
+	mdlcache = (IMDLCache*)datacache(MDLCACHE_INTERFACE_VERSION, NULL);
 
 	if (!mdlcache)
 	{
-		Error("NO MDL FOR U");
+		Error("gm_dolly: Couldn't create IMDLCache interface");
 		return 0;
 	}
 
-	CreateInterfaceFn i_engine = Sys_GetFactory(ENGINE_DLL);
+	CreateInterfaceFn _engine = Sys_GetFactory(ENGINE_LIB);
 
-	if (!i_engine)
+	if (!_engine)
 	{
-		Error("SHIT ENGINE");
+		Error("gm_dolly: Couldn't create engine interface");
 		return 0;
 	}
 
-	engine = (IVEngineServer*)i_engine(INTERFACEVERSION_VENGINESERVER, NULL);
+	engine = (IVEngineServer*)_engine(INTERFACEVERSION_VENGINESERVER, NULL);
 
 	if (!engine)
 	{
-		Error("Fuck server");
+		Error("Couldn't create IVEngineServer interface");
 		return 0;
 	}
 
 	g_Lua = LUA;
 	
-	LUA->PushSpecial(SPECIAL_REG);
-		LUA->GetField(-1, "Entity");
-		REG_FUNC(RemoveInternalConstraint);
-	LUA->Pop(2);
-
-	LUA->PushSpecial(SPECIAL_GLOB);			
-		REG_FUNC(GetModelInfo);
-				
+	LUA->PushSpecial(SPECIAL_GLOB);
+		REG_FUNC(RemoveConstraints);
+		REG_FUNC(GetConstraintInfo);		
 		LUA->GetField(-1, "Vector");
 		funcVector = LUA->GetCFunction();		
-	LUA->Pop();
+	LUA->Pop(2);
 
 	return 0;
 }
@@ -160,164 +154,102 @@ GMOD_MODULE_CLOSE()
 	return 0;
 }
 
-CBaseEntity* GetEntity(CBaseHandle* pHandle)
+CBaseEntity* GetEntity(CBaseHandle* handle)
 {
-	edict_t* pEdict = engine->PEntityOfEntIndex(pHandle->GetEntryIndex());
-	if (!pEdict)
+	edict_t* edict = engine->PEntityOfEntIndex(handle->GetEntryIndex());
+	if (!edict)
 	{
 		return NULL;
 	}
 
-	IServerUnknown* pUnknown = pEdict->GetUnknown();
+	IServerUnknown* unknown = edict->GetUnknown();
 
-	if (!pUnknown)
+	if (!unknown)
 	{
 		return NULL;
 	}
 
-	return pUnknown->GetBaseEntity();
+	return unknown->GetBaseEntity();
 }
 
-LUA_FUNC(RemoveInternalConstraint)
+LUA_FUNC(RemoveConstraints)
 {
 	LUA->CheckType(1, Type::ENTITY);
-	LUA->CheckType(2, Type::NUMBER);
-
-	CBaseHandle* pHandle = (CBaseHandle*)((UserData*)LUA->GetUserdata(1))->data;
-
-	CBaseEntity* pEnt = GetEntity(pHandle);
-
-	if (!pEnt || !IsRagdoll(pEnt))
-	{
-		Error("Not a ragdoll");
-		return 0;
-	}
-
-	int iIndex = ((int)LUA->GetNumber(2));
-
-	if (iIndex < 1 || iIndex > 23)
-	{
-		Error("Index out of bounds");
-		return 0;
-	}
-
-	char szStr[31];
-
-	sprintf(szStr, "m_ragdoll.list[%i].pConstraint", iIndex);
-
-	datamap_t* pDataMap = pEnt->GetDataDescMap();
-
-	size_t offset = GetData(pDataMap, "m_ragdoll.allowStretch");
-
-	*(bool*)((size_t)pEnt+offset) = true; //Elastagirl
 	
-	offset = GetData(pDataMap, szStr);
+	CBaseHandle* handle = (CBaseHandle*)((UserData*)LUA->GetUserdata(1))->data;
 
-	if (!offset)
+	CBaseEntity* ent = GetEntity(handle);
+
+	if (!ent || !IsRagdoll(ent))
 	{
-		Error("Invalid offset");
+		Error("RemoveConstraints: Invalid entity");
 		return 0;
 	}
 
-	IPhysicsConstraint** ppConstraint = (IPhysicsConstraint**)((size_t)pEnt+offset);
-	IPhysicsConstraint* pConstraint = *ppConstraint;
+	datamap_t* datamap = ent->GetDataDescMap();
 	
-	if (!pConstraint)
+	size_t listCount_offset = GetData(datamap, "m_ragdoll.listCount");
+	int listCount = *(int*)((size_t)ent+listCount_offset);
+	
+	for (int i=1;i<listCount;++i)
 	{
-		Error("Invalid constraint");
-		return 0;
-	}
+		char str[31];
+		sprintf(str, "m_ragdoll.list[%i].pConstraint", i);
 
-	physenv->DestroyConstraint(pConstraint);	
-	*ppConstraint = NULL;
+		size_t pConstraint_offset = GetData(datamap, str);
+		
+		IPhysicsConstraint** ppConstraint = (IPhysicsConstraint**)((size_t)ent+pConstraint_offset);
+		IPhysicsConstraint* pConstraint = *ppConstraint;
+
+		if (pConstraint)
+		{
+			physenv->DestroyConstraint(pConstraint);
+			*ppConstraint = NULL;
+		}
+	}
+	
+	size_t allowStretch_offset = GetData(datamap, "m_ragdoll.allowStretch");
+	*(bool*)((size_t)ent+allowStretch_offset) = true;
 	
 	return 0;
 }
 
-void PushLuaVector(Vector vVec)
+void PushLuaVector(Vector vec)
 {
 	g_Lua->PushCFunction(funcVector);
-	g_Lua->PushNumber(vVec.x);
-	g_Lua->PushNumber(vVec.y);
-	g_Lua->PushNumber(vVec.z);
+	g_Lua->PushNumber(vec.x);
+	g_Lua->PushNumber(vec.y);
+	g_Lua->PushNumber(vec.z);
 	g_Lua->Call(3, 1);
 }
 
-LUA_FUNC(GetModelInfo)
+LUA_FUNC(GetConstraintInfo)
 {
 	LUA->CheckType(1, Type::STRING);
 
-	const char* szMDLName = LUA->GetString(1);
+	const char* mdlName = LUA->GetString(1);
 
-	MDLHandle_t MDLHandle = mdlcache->FindMDL(szMDLName);
+	MDLHandle_t mdlHandle = mdlcache->FindMDL(mdlName);
 
-	vcollide_t* pVCollide = mdlcache->GetVCollide(MDLHandle);
+	vcollide_t* vcollide = mdlcache->GetVCollide(mdlHandle);
 	
-	IVPhysicsKeyParser *pParse = physcollision->VPhysicsKeyParserCreate(pVCollide->pKeyValues);
+	IVPhysicsKeyParser* parse = physcollision->VPhysicsKeyParserCreate(vcollide->pKeyValues);
 
 	LUA->CreateTable();
 	
-	int iIndex = 1;
+	int index = 1;
 
-#define INIT_TABLE() LUA->PushNumber(iIndex++); \
-			LUA->CreateTable(); \
-			LUA->PushString(szBlockName); \
-			LUA->SetField(-2, "type")
-
-	while (!pParse->Finished())
+	while (!parse->Finished())
 	{
-		const char* szBlockName = pParse->GetCurrentBlockName();
+		const char* blockName = parse->GetCurrentBlockName();
 
-		if (FStrEq(szBlockName, "solid"))
+		if (FStrEq(blockName, "ragdollconstraint"))
 		{
-			INIT_TABLE();
-
-			solid_t solid;
-			pParse->ParseSolid(&solid, NULL);
-			
-			LUA->PushNumber(solid.index);
-			LUA->SetField(-2, "index");
-
-			PushLuaVector(solid.massCenterOverride);
-			LUA->SetField(-2, "massCenterOverride");
-
-			LUA->PushString(solid.name);
-			LUA->SetField(-2, "name");
-
-			objectparams_t params = solid.params;
-			
-			LUA->PushNumber(params.damping);
-			LUA->SetField(-2, "damping");
-
-			LUA->PushNumber(params.dragCoefficient);
-			LUA->SetField(-2, "dragCoefficient");
-
-			LUA->PushBool(params.enableCollisions);
-			LUA->SetField(-2, "enableCollisions");
-
-			LUA->PushNumber(params.inertia);
-			LUA->SetField(-2, "inertia");
-
-			LUA->PushNumber(params.mass);
-			LUA->SetField(-2, "mass");
-
-			LUA->PushNumber(params.rotdamping);
-			LUA->SetField(-2, "rotdamping");
-
-			LUA->PushNumber(params.rotInertiaLimit);
-			LUA->SetField(-2, "rotInertiaLimit");
-
-			LUA->PushNumber(params.volume);
-			LUA->SetField(-2, "volume");
-
-			LUA->SetTable(-3);
-		}
-		else if (FStrEq(szBlockName, "ragdollconstraint"))
-		{
-			INIT_TABLE();
+			LUA->PushNumber(index++);
+			LUA->CreateTable();
 
 			constraint_ragdollparams_t constraint;
-			pParse->ParseRagdollConstraint(&constraint, NULL);
+			parse->ParseRagdollConstraint(&constraint, NULL);
 			
 			LUA->PushNumber(constraint.axes[0].minRotation);
 			LUA->SetField(-2, "minRotationX");
@@ -339,21 +271,15 @@ LUA_FUNC(GetModelInfo)
 
 			LUA->PushNumber(constraint.childIndex);
 			LUA->SetField(-2, "childIndex");
-
-			LUA->PushBool(constraint.onlyAngularLimits);
-			LUA->SetField(-2, "onlyAngularLimits");
-
+						
 			LUA->PushNumber(constraint.parentIndex);
 			LUA->SetField(-2, "parentIndex");
-
-			LUA->PushBool(constraint.useClockwiseRotations);
-			LUA->SetField(-2, "useClockwiseRotations");
-
+						
 			LUA->SetTable(-3);
 		}		
 		else
 		{
-			pParse->SkipBlock();
+			parse->SkipBlock();
 		}
 	}
 
