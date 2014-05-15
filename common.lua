@@ -258,7 +258,7 @@ function PROJECT()
 				--"CLIENT_DLL",
 				"VERSION_SAFE_STEAM_API_INTERFACES",
 				"VECTOR",
-				"NO_STRING_T",
+				--"NO_STRING_T", -- breaks cbase.h for example
 				--"NO_SDK",
 				"_CRT_NONSTDC_NO_DEPRECATE",
 				"_CRT_SECURE_NO_DEPRECATE",
