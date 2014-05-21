@@ -6,7 +6,6 @@
 #pragma comment(lib,"tier2.lib")
 #pragma comment(lib,"vstdlib.lib")
 
-#define GMMODULE
 #include "GarrysMod/Lua/Interface.h"
 
 #ifdef _WIN32
@@ -23,7 +22,7 @@
 
 #endif
 
-#define GAME_DLL
+#define GAME_DLL 1
 #include "cbase.h"
 #include "vphysics_interface.h"
 #include "datacache/imdlcache.h"
