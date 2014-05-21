@@ -83,7 +83,7 @@ GMOD_MODULE_OPEN()
 
 	if (!vphysics)
 	{
-		Error("gm_dolly: Couldn't create vphysics interface");
+		Error("Couldn't create vphysics interface");
 		return 0;
 	}
 
@@ -91,7 +91,7 @@ GMOD_MODULE_OPEN()
 
 	if (!physics)
 	{
-		Error("gm_dolly: Couldn't create IPhysics interface");
+		Error("Couldn't create IPhysics interface");
 		return 0;
 	}
 
@@ -101,7 +101,7 @@ GMOD_MODULE_OPEN()
 
 	if (!physcollision)
 	{
-		Error("gm_dolly: Couldn't create IPhysicsCollision interface");
+		Error("Couldn't create IPhysicsCollision interface");
 		return 0;
 	}
 
@@ -109,7 +109,7 @@ GMOD_MODULE_OPEN()
 
 	if (!datacache)
 	{
-		Error("gm_dolly: Couldn't create datacache interface");
+		Error("Couldn't create datacache interface");
 		return 0;
 	}
 
@@ -117,7 +117,7 @@ GMOD_MODULE_OPEN()
 
 	if (!mdlcache)
 	{
-		Error("gm_dolly: Couldn't create IMDLCache interface");
+		Error("Couldn't create IMDLCache interface");
 		return 0;
 	}
 
@@ -125,7 +125,7 @@ GMOD_MODULE_OPEN()
 
 	if (!_engine)
 	{
-		Error("gm_dolly: Couldn't create engine interface");
+		Error("Couldn't create engine interface");
 		return 0;
 	}
 
@@ -182,7 +182,7 @@ LUA_FUNC(RemoveConstraints)
 
 	if (!ent || !IsRagdoll(ent))
 	{
-		Error("RemoveConstraints: Invalid entity");
+		Error("Invalid entity");
 		return 0;
 	}
 
@@ -228,10 +228,15 @@ LUA_FUNC(GetConstraintInfo)
 	LUA->CheckType(1, Type::STRING);
 
 	const char* mdlName = LUA->GetString(1);
-
+	
 	MDLHandle_t mdlHandle = mdlcache->FindMDL(mdlName);
 
 	vcollide_t* vcollide = mdlcache->GetVCollide(mdlHandle);
+
+	if (!vcollide)
+	{
+		return 0;
+	}
 	
 	IVPhysicsKeyParser* parse = physcollision->VPhysicsKeyParserCreate(vcollide->pKeyValues);
 
