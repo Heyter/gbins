@@ -92,6 +92,45 @@ bool GeoIPToLua(const char * ipstring) {
 }
 
 
+int time_zone_by_country_and_region( lua_State* S )
+{
+	const char * ret = NULL;
+	state=S;
+
+	LUA->CheckType(1, Type::STRING);
+	const char *country_code = LUA->GetString(1);
+	
+	LUA->CheckType(2, Type::STRING);
+	const char *region_code = LUA->GetString(2);
+
+	ret = GeoIP_time_zone_by_country_and_region(country_code,region_code);
+	
+	if (!ret) return 0;
+	
+	LUA->PushString(ret);
+	
+	return 1;
+}
+int region_name_by_code( lua_State* S )
+{
+	const char * ret = NULL;
+	state=S;
+
+	LUA->CheckType(1, Type::STRING);
+	const char *country_code = LUA->GetString(1);
+	
+	LUA->CheckType(2, Type::STRING);
+	const char *region_code = LUA->GetString(2);
+
+	ret = GeoIP_region_name_by_code(country_code,region_code);
+	
+	if (!ret) return 0;
+	
+	LUA->PushString(ret);
+	
+	return 1;
+}
+
 
 int GeoIP_Get( lua_State* S )
 {
@@ -132,13 +171,14 @@ GMOD_MODULE_OPEN()
 	LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
     LUA->CreateTable();
 
+            LUA->PushCFunction(time_zone_by_country_and_region); LUA->SetField(-2, "timezone");
+            LUA->PushCFunction(region_name_by_code); LUA->SetField(-2, "region_name");
             LUA->PushCFunction(GeoIP_Get); LUA->SetField(-2, "Get");
 
     LUA->SetField(-2, "GeoIP");
 
 	return 0;
 }
-
 GMOD_MODULE_CLOSE()
 {
 	GeoIP_delete(COUNTRY);
