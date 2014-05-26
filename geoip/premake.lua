@@ -27,7 +27,6 @@ SOLUTION"geoip"
 		kind "StaticLib"
 		language "C"
 		
-		defines	[[PACKAGE_VERSION="1.6.0"]]
 		defines	{"GEOIP_EXPORTS","_CRT_SECURE_NO_WARNINGS"}
 		
 		files{
@@ -40,9 +39,12 @@ SOLUTION"geoip"
 		}
 		
 		WINDOWS()
+			defines	[[PACKAGE_VERSION="1.6.0"]]
 			files{
 				"geoip/libGeoIP/pread.c",
 
 			}
 		LINUX()
+			defines	[[PACKAGE_VERSION=\"1.6.0\"]]
+			defines[[GEOIPDATADIR=\".\"]]
 		
