@@ -1,3 +1,4 @@
+
 dofile("../common.lua")
 
 RequireDefaultlibs()
@@ -6,19 +7,42 @@ SOLUTION"geoip"
 	
 	targetdir	"Release"
 	INCLUDES	"gmod_sdk"
-	includedirs	{"geoip/"}
 	defines		{"NDEBUG"}
+	includedirs	"geoip/"
+	includedirs	"geoip/libGeoIP"
+
 	
 	WINDOWS()
-		libdirs		{"geoip/libGeoIP"}
-		includedirs	{"geoip/libGeoIP"}
-		links		{"Ws2_32","GeoIP.lib"}
+		links		{"Ws2_32"}
 	
 	LINUX()
-		libdirs		{"geoip/libGeoIP/.libs","geoip/libGeoIP","libGeoIP","geoip/lib"}
-		links_static "GeoIP"
 
 	PROJECT()
+		links "geoiplib"
 		configuration 		"windows"
-			files{"geoip/libGeoIP/GeoIP_deprecated.c"}
 		configuration 		"linux"
+
+
+	project"geoiplib"
+		kind "StaticLib"
+		language "C"
+		
+		defines	[[PACKAGE_VERSION="1.6.0"]]
+		defines	{"GEOIP_EXPORTS","_CRT_SECURE_NO_WARNINGS"}
+		
+		files{
+			"geoip/libGeoIP/GeoIP.c",
+			"geoip/libGeoIP/GeoIPCity.c",
+			"geoip/libGeoIP/GeoIP_deprecated.c",
+			"geoip/libGeoIP/regionName.c",
+			"geoip/libGeoIP/timeZone.c",
+
+		}
+		
+		WINDOWS()
+			files{
+				"geoip/libGeoIP/pread.c",
+
+			}
+		LINUX()
+		
