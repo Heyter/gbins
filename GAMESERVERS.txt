@@ -1,0 +1,5 @@
+Game server requirements: 
+	VS2010/VS2013 redistributable:
+		2010: http://www.microsoft.com/en-us/download/details.aspx?id=5555
+		2013: http://www.microsoft.com/en-us/download/details.aspx?id=40784
+		

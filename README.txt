@@ -8,16 +8,18 @@ Common Requirements:
 		source-sdk-2013
 		TIME
 		
-Windows requirements:
-	Visual Studio 2010
-	GnuWin32 ( http://sourceforge.net/projects/getgnuwin32/files/getgnuwin32/ )
-		- It is recommended that you get gnuwin32 tools in your PATH or some things may not work
-	Game servers also need VS2010 redistributable ( http://www.microsoft.com/en-us/download/details.aspx?id=5555 )
+Requirements:
+	Windows
+		Visual Studio 2010/2013
+		msysgit ( http://msysgit.github.io/ )
+		GnuWin32 ( http://sourceforge.net/projects/getgnuwin32/files/getgnuwin32/ )
+			- It is recommended that you get gnuwin32 tools in your PATH or some things may not work
+	Linux:
+		apt-get install build-essential gcc g++ gcc-multilib git subversion wget tar bzip2 gzip unzip
+	Mac:
+		TODO
 
-Linux requirements:
-	32 bit versions of gcc, etc...
-	( apt-get install build-essential gcc g++ gcc-multilib git subversion wget tar bzip2 gzip unzip )
-
+		
 Settings up:
 	settings.lua: path to various libraries
 
