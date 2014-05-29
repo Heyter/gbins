@@ -8,7 +8,7 @@ SOURCE_SDK =
 SRCDS_DIR = 
 	windows	and	[[x:/g/srcds/steamapps/common/GarrysModDS]]
 	or (mac	and	[[/path/to]])
-			or	[[/home/srcds/srcds/orangebox]]
+			or	[[/home/srcds/srcds]]
 
 STEAMWORKS_SDK = 
 	windows	and	[[steamworks_sdk]] 

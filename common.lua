@@ -61,6 +61,7 @@ SOURCE_SDK_INCLUDES={
 	SOURCE_SDK.."/public",
 	SOURCE_SDK.."/public/engine",
 	SOURCE_SDK.."/common",
+	SOURCE_SDK.."/public/vstdlib",
 	SOURCE_SDK.."/public/steam",
 	SOURCE_SDK.."/public/tier0",
 	SOURCE_SDK.."/public/tier1",
@@ -158,7 +159,7 @@ local include_helpers = {
 					-- massive hack, but it works just the way I wanted it to
 					linkoptions		{"-Wl,-rpath='$$ORIGIN'"}
 					linkoptions		{"garrysmod/bin/lua_shared_srv.so"}
-					prelinkcommands	{"mkdir -p garrysmod/bin && ln -s "..SRCDS_DIR.."/garrysmod/bin/lua_shared_srv.so garrysmod/bin/lua_shared_srv.so "}
+					prelinkcommands	{"mkdir -p garrysmod/bin && ln -s -f "..SRCDS_DIR.."/garrysmod/bin/lua_shared_srv.so garrysmod/bin/lua_shared_srv.so "}
 					
 			end
 		end,
