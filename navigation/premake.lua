@@ -14,5 +14,8 @@ SOLUTION"navigation"
 	PROJECT()
 		SOURCE_SDK_LINKS()
 		configuration 		"windows"
-			--links	"steam_api"
 		configuration 		"linux"
+			defines		{"USE_BOOST_THREADS"}
+			removedefines	"PROTECTED_THINGS_ENABLE"
+			links	{"pthread","boost_thread"}
+			buildoptions { "-fpermissive" }

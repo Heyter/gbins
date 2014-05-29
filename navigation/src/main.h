@@ -1,7 +1,4 @@
-/*
-    gm_navigation
-    By Spacetech
-*/
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <interface.h>
 #include "eiface.h"

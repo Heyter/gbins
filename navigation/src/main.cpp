@@ -3,14 +3,13 @@
     By Spacetech
 */
 
-
 #define ENGINE_LIB "engine_srv.so"
 
 #include "main.h"
 
 //#include "node.h"
 #include "nav.h"
-#include "tier0/memdbgon.h"
+//#include "tier0/memdbgon.h"
 
 GMOD_MODULE(Init, Shutdown);
 
