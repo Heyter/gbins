@@ -6,7 +6,7 @@ SOLUTION"navigation"
 	
 	INCLUDES	"source_sdk"
 	INCLUDES	"backwards_headers"
-	defines		{"NDEBUG"}
+	defines		{"NDEBUG","LUA_SERVER"}
 	
 	WINDOWS()
 	LINUX()
