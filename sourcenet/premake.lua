@@ -9,6 +9,7 @@ SOLUTION"sourcenet"
 	targetdir	"Release"
 	INCLUDES	"source_sdk"
 	INCLUDES	"hooking"
+	INCLUDES	"sigscanning"
 	INCLUDES	"backwards_headers"
 	defines		{"NDEBUG"}
 	includedirs	{"src","src/sourcenet","src/engine","src/common"}
@@ -28,6 +29,10 @@ SOLUTION"sourcenet"
 		}
 		
 		SOURCE_SDK_LINKS()
+		INCLUDES	"sigscanning"
+		
 		configuration 		"windows"
+		
 		configuration 		"linux"
 			defines "_LINUX"
+			buildoptions { "-fpermissive" }

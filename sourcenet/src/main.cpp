@@ -50,9 +50,9 @@
 
 #include "memutils.h"
 
-#define ENGINE_LIB "engine.so"
+#define ENGINE_LIB "engine_srv.so"
 #define CLIENT_LIB NULL
-#define SERVER_LIB "server.so"
+#define SERVER_LIB "server_srv.so"
 
 #define NETPATCH_LEN 6
 #define NETPATCH_OLD "\x0F\x85\xC9\x00\x00\x00"

@@ -208,6 +208,8 @@ extern ICvar *g_pCVarServer;
 
 #elif defined _LINUX
 
+#define strcpy_s(a,b,c) strncpy(a,c,b)
+
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -216,7 +218,7 @@ inline unsigned char *PageAlign( unsigned char *addr, long page )
 	return addr - ( (DWORD)addr % page );
 }
 
-#define BEGIN_MEMEDIT( addr, size ) \ 
+#define BEGIN_MEMEDIT( addr, size ) \
 { \
 	long page = sysconf( _SC_PAGESIZE ); \
 	mprotect( PageAlign( (unsigned char *)addr, page ), \
