@@ -30,14 +30,14 @@ SOLUTION"sourcenet"
 		{
 			"src/sourcenet/*.cpp",
 			"src/engine/*.cpp",
-			"src/simplescan/*.cpp",
 		}
 		
-		SOURCE_SDK_LINKS()
+		SOURCE_SDK_LINKS	()
 		INCLUDES			"sigscanning"
 		
 		configuration 		"windows"
-			defines 		"SOURCENET_HOOKING"
+			defines 			"SOURCENET_HOOKING" 
+			files				"src/simplescan/*.cpp"
 		configuration 		"linux"
-			defines 		"_LINUX"
-			buildoptions 	{ "-fpermissive" }
+			defines 			"_LINUX"
+			buildoptions 		{ "-fpermissive" }

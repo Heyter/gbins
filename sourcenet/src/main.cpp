@@ -83,7 +83,9 @@ ICvar *g_pCVarClient = NULL;
 ICvar *g_pCVarServer = NULL;
 
 // CSigScan wrapper
-#include "../simplescan/csimplescan.h"
+#ifdef _WIN32
+	#include "../simplescan/csimplescan.h"
+#endif
 
 // CNetChan::ProcessMessages function pointer
 void *CNetChan_ProcessMessages_T = NULL;
@@ -606,7 +608,10 @@ int Open( lua_State *L )
 	REG_GLBL_FUNCTION( sourcenet_isDedicatedServer );
 
 #ifdef SOURCENET_HOOKING
+
+#ifdef _WIN32	
 	CSimpleScan engineScn( fnEngineFactory );
+#endif
 
 	if ( !IS_ATTACHED( CNetChan_ProcessMessages ) )
 	{
@@ -682,6 +687,7 @@ int Close( lua_State *L )
 	{
 		if ( g_bPatchedNetChunk )
 		{
+#ifdef WIN32
 			CSimpleScan engineScn( fnEngineFactory );
 
 			unsigned int ulNetThreadChunk;
@@ -694,6 +700,7 @@ int Close( lua_State *L )
 					memcpy( (void *)ulNetThreadChunk, NETPATCH_OLD, NETPATCH_LEN );
 				FINISH_MEMEDIT( (void *)ulNetThreadChunk, NETPATCH_LEN );
 			}
+#endif
 		}
 	}
 #endif
