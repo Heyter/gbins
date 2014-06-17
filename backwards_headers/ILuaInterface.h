@@ -26,7 +26,7 @@ public:
 	ILuaObject*		NewTemporaryObject();
 	ILuaObject*		NewUserData( ILuaObject* metaT );
 
-	void			PushUserData( ILuaObject* metatable, void * v, unsigned char type );
+	void			PushUserData( ILuaObject* metatable, void * v, unsigned char type = 1 );
 	
 	void			Error( const char* strError, ... );
 	void			ErrorNoHalt( const char* strError, ... );
@@ -88,7 +88,21 @@ public:
 
 	ILuaObject*		GetMetaTable( const char* strName, int iType );
 	ILuaObject*		GetMetaTable( int i );
+	
+	bool			IsServer();
+	bool			IsClient();
 
+	void			Msg( const char* strMsg, const char strMsg2 );
+	void			Msg( const char* strMsg );
+
+	/*
+	virtual void Msg( const char* strMsg );
+	void Msg( const char* strMsg, const char strMsg2 );
+	virtual void ErrorPrint( const char* strError );
+
+	virtual void	TypeError( const char* name, int argument );
+	virtual void PushDouble( double iInt );
+	*/
 private:
 	lua_State*		m_pState;
 	ILuaBase*		m_pLua;
@@ -96,6 +110,9 @@ private:
 	ILuaObject*		m_pR;
 	ILuaObject*		m_pE;
 	ILuaObject*		m_pErrorNoHalt;
+	ILuaObject*		m_hookCall;
+    ILuaObject*     m_nethookWriteCallback;
+    bool            m_isServer;
 };
 
 #endif

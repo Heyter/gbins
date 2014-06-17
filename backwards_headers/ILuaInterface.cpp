@@ -467,3 +467,27 @@ ILuaObject* ILuaInterface::GetMetaTable( int i )
 	else
 		return NULL;
 }
+
+void ILuaInterface::Msg( const char* strMsg, const char strMsg2 )
+{
+		m_pLua->GetField( 1 , "print" );
+		m_pLua->PushString( "hello world!" );
+		m_pLua->Call( 1, 0 );
+}
+
+void ILuaInterface::Msg( const char* strMsg )
+{
+		m_pLua->GetField( 1 , "print" );
+		m_pLua->PushString( strMsg );
+		m_pLua->Call( 1, 0 );
+}
+
+bool ILuaInterface::IsServer()
+{
+    return m_isServer;
+}
+
+bool ILuaInterface::IsClient()
+{
+    return !m_isServer;
+}
