@@ -52,7 +52,7 @@ CFunc funcVector;
 
 bool IsRagdoll(CBaseEntity* ent)
 {
-	return dynamic_cast<CRagdollProp*>(ent) != NULL;
+	return true;
 }
 
 size_t GetData(datamap_t* map, const char* name)
