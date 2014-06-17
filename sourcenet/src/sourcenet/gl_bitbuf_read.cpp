@@ -118,8 +118,7 @@ META_FUNCTION( sn3_bf_read, ReadBits )
 	unsigned char *data = new unsigned char[ Int ];
 	if ( !data )
 	{
-		Lua()->Error( "[gm_sourcenet3] Failed to allocate " + Int );
-		//Lua()->Msg( "[gm_sourcenet3][sn3_bf_read::ReadBits] Failed allocating %i bytes\n", BitByte( Lua()->GetInteger( 2 ) ) );
+		Warning( "[gm_sourcenet3][sn3_bf_read::ReadBits] Failed allocating %i bytes\n", BitByte( Lua()->GetInteger( 2 ) ) );
 		Lua()->Error( "[gm_sourcenet3][sn3_bf_read::ReadBits] Fatal error" );
 
 		// Prevent further reading of the buffer
@@ -180,7 +179,7 @@ META_FUNCTION( sn3_bf_read, ReadBytes )
 
 	if ( !data )
 	{
-		Lua()->Msg( "[gm_sourcenet3][sn3_bf_read::ReadBytes] Failed allocating %i bytes\n", Lua()->GetInteger( 2 ) );
+		Msg( "[gm_sourcenet3][sn3_bf_read::ReadBytes] Failed allocating %i bytes\n", Lua()->GetInteger( 2 ) );
 		Lua()->Error( "[gm_sourcenet3][sn3_bf_read::ReadBytes] Fatal error" );
 
 		// Prevent further reading of the buffer

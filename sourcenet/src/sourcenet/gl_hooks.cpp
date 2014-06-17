@@ -429,7 +429,7 @@ GLBL_FUNCTION( Attach__CNetChan_ProcessMessages )
 
 	ICvar *g_pCVar = NULL;
 
-	if ( false )
+	if ( Lua()->IsClient() )
 		g_pCVar = g_pCVarClient;
 	else
 		g_pCVar = g_pCVarServer;

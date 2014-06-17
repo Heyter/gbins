@@ -39,7 +39,7 @@ GLBL_FUNCTION( INetworkStringTableContainer )
 {
 	UsesLua();
 
-	INetworkStringTableContainer *pContainer = (INetworkStringTableContainer *)fnEngineFactory( false ? INTERFACENAME_NETWORKSTRINGTABLECLIENT : INTERFACENAME_NETWORKSTRINGTABLESERVER, NULL );
+	INetworkStringTableContainer *pContainer = (INetworkStringTableContainer *)fnEngineFactory( Lua()->IsClient() ? INTERFACENAME_NETWORKSTRINGTABLECLIENT : INTERFACENAME_NETWORKSTRINGTABLESERVER, NULL );
 
 	PUSH_META( pContainer, INetworkStringTableContainer );
 

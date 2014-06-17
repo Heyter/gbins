@@ -853,7 +853,7 @@ GLBL_FUNCTION( CNetChan )
 
 	CNetChan *netchan = NULL;
 
-	if ( !false )
+	if ( !Lua()->IsClient() )
 	{
 		Lua()->CheckType( 1, GLua::TYPE_NUMBER );
 

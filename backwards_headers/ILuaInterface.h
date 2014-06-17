@@ -92,17 +92,6 @@ public:
 	bool			IsServer();
 	bool			IsClient();
 
-	void			Msg( const char* strMsg, const char strMsg2 );
-	void			Msg( const char* strMsg );
-
-	/*
-	virtual void Msg( const char* strMsg );
-	void Msg( const char* strMsg, const char strMsg2 );
-	virtual void ErrorPrint( const char* strError );
-
-	virtual void	TypeError( const char* name, int argument );
-	virtual void PushDouble( double iInt );
-	*/
 private:
 	lua_State*		m_pState;
 	ILuaBase*		m_pLua;

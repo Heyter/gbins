@@ -1,6 +1,5 @@
 dofile("../common.lua")
 
--- for some reason it wont compile otherwise
 --RequireDefaultlibs()
 RequireRuntime()
 
@@ -11,28 +10,34 @@ SOLUTION"sourcenet"
 	INCLUDES	"hooking"
 	INCLUDES	"sigscanning"
 	INCLUDES	"backwards_headers"
-	defines		{"NDEBUG"}
-	includedirs	{"src","src/sourcenet","src/engine","src/common"}
+	includedirs	{	
+					"src",
+					"src/sourcenet",
+					"src/engine",
+					"src/simplescan",
+					"src/common"
+				}
 	
 	WINDOWS()
 		defines		{"USE_WINSOCK"}
 		links		{"Ws2_32"}
 	
 	LINUX()
-		links{"dl"}
+		links		{"dl"}
 		
 	PROJECT()
 		files 
 		{
 			"src/sourcenet/*.cpp",
 			"src/engine/*.cpp",
+			"src/simplescan/*.cpp",
 		}
 		
 		SOURCE_SDK_LINKS()
-		INCLUDES	"sigscanning"
+		INCLUDES			"sigscanning"
 		
 		configuration 		"windows"
-		
+			defines 		"SOURCENET_HOOKING"
 		configuration 		"linux"
-			defines "_LINUX"
-			buildoptions { "-fpermissive" }
+			defines 		"_LINUX"
+			buildoptions 	{ "-fpermissive" }

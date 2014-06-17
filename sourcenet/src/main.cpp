@@ -82,6 +82,8 @@ IVEngineClient *g_pEngineClient = NULL;
 ICvar *g_pCVarClient = NULL;
 ICvar *g_pCVarServer = NULL;
 
+// CSigScan wrapper
+#include "../simplescan/csimplescan.h"
 
 // CNetChan::ProcessMessages function pointer
 void *CNetChan_ProcessMessages_T = NULL;
@@ -145,7 +147,7 @@ int Open( lua_State *L )
 		return 0;
 	}
 
-	if ( false || !g_pEngineServer->IsDedicatedServer() )
+	if ( Lua()->IsClient() || !g_pEngineServer->IsDedicatedServer() )
 	{
 		g_pEngineClient = (IVEngineClient *)fnEngineFactory( VENGINE_CLIENT_INTERFACE_VERSION, NULL );
 
@@ -168,7 +170,7 @@ int Open( lua_State *L )
 		}
 	}
 	
-	if ( true || !g_pEngineServer->IsDedicatedServer() )
+	if ( Lua()->IsServer() || !g_pEngineServer->IsDedicatedServer() )
 	{
 #ifdef _WIN32
 		g_pCVarServer = *(ICvar **)GetProcAddress( GetModuleHandle( SERVER_LIB ), "cvar" );
@@ -603,7 +605,53 @@ int Open( lua_State *L )
 
 	REG_GLBL_FUNCTION( sourcenet_isDedicatedServer );
 
+#ifdef SOURCENET_HOOKING
+	CSimpleScan engineScn( fnEngineFactory );
+
+	if ( !IS_ATTACHED( CNetChan_ProcessMessages ) )
+	{
+#ifdef _WIN32
+		engineScn.Find( CNetChan_ProcessMessages_SIG, CNetChan_ProcessMessages_MSK, (void **)&CNetChan_ProcessMessages_T );
+#else
+		void *hEngine = dlopen( ENGINE_LIB, RTLD_NOW );
+		
+		if ( hEngine )
+		{
+			CNetChan_ProcessMessages_T = ResolveSymbol( hEngine, "_ZN8CNetChan15ProcessMessagesER7bf_read" );
+
+			dlclose( hEngine );
+		}
+#endif
+		if ( !CNetChan_ProcessMessages_T )
+		{
+			Lua()->ErrorNoHalt( "[gm_sourcenet3] Failed to locate CNetChan::ProcessMessages, report this!\n" );
+		}
+	}
 	
+	if ( !Lua()->IsClient() )
+	{
+		// Disables per-client threads (hacky fix for SendDatagram hooking)
+
+		unsigned int ulNetThreadChunk;
+		
+		if ( engineScn.Find( NETCHUNK_SIG, NETCHUNK_MSK, (void **)&ulNetThreadChunk) )
+		{
+			ulNetThreadChunk += NETCHUNK_SIG_OFFSET;
+
+			BEGIN_MEMEDIT( (void *)ulNetThreadChunk, NETPATCH_LEN );
+				memcpy( (void *)ulNetThreadChunk, NETPATCH_NEW, NETPATCH_LEN );
+			FINISH_MEMEDIT( (void *)ulNetThreadChunk, NETPATCH_LEN );
+
+			g_bPatchedNetChunk = true;
+		}
+		else
+		{
+			g_bPatchedNetChunk = false;
+
+			Lua()->Error( "[gm_sourcenet3] Failed to locate net thread chunk, report this!\n" );
+		}
+	}
+#endif
 
 	return 0;
 }
@@ -629,7 +677,25 @@ int Close( lua_State *L )
 			break;
 		}
 	}
+#ifdef SOURCENET_HOOKING
+	if ( !Lua()->IsClient() )
+	{
+		if ( g_bPatchedNetChunk )
+		{
+			CSimpleScan engineScn( fnEngineFactory );
 
-	
+			unsigned int ulNetThreadChunk;
+			
+			if ( engineScn.Find( NETCHUNK_SIG, NETCHUNK_MSK, (void **)&ulNetThreadChunk) )
+			{
+				ulNetThreadChunk += NETCHUNK_SIG_OFFSET;
+
+				BEGIN_MEMEDIT( (void *)ulNetThreadChunk, NETPATCH_LEN );
+					memcpy( (void *)ulNetThreadChunk, NETPATCH_OLD, NETPATCH_LEN );
+				FINISH_MEMEDIT( (void *)ulNetThreadChunk, NETPATCH_LEN );
+			}
+		}
+	}
+#endif
 	return 0;
 }
