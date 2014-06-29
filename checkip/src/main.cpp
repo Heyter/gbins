@@ -24,14 +24,22 @@ extern "C" {
 
 #define LOG(x) write(2,x,strlen(x))
 
-typedef int (*	tCollcheck ) (  int , int  ) ;
-tCollcheck original_AdditionalCollisionChecksThisTick = NULL;
+typedef bool (*	tCheckIPInternal ) ( netadr_s & ) ;
+tCheckIPInternal original_CheckIPInternal = NULL;
 
 lua_State* L = NULL;
 
-MologieDetours::Detour<tCollcheck>* detour_AdditionalCollisionChecksThisTick = NULL;
+MologieDetours::Detour<tCheckIPInternal>* detour_CheckIPInternal = NULL;
 
-int hook_AdditionalCollisionChecksThisTick( int thisptr, int currentChecksDone )
+typedef bool (*	tCheckIP ) ( netadr_s & ) ;
+tCheckIP original_CheckIP = NULL;
+MologieDetours::Detour<tCheckIP>* detour_CheckIP = NULL;
+int lastCount=0;
+int rettbl=LUA_NOREF;
+
+
+
+bool hook_CheckIPInternal( int thisptr, int currentChecksDone )
 {
 	int ret = 0;
 	if ( currentChecksDone < 1200 )
@@ -68,38 +76,17 @@ int hook_AdditionalCollisionChecksThisTick( int thisptr, int currentChecksDone )
 	return ret;
 }
 
-#if 0
-//AdditionalCollisions
-lua_run require'penicillin'
-lua_run physenv.SetPerformanceSettings{ MaxCollisionChecksPerTimestep = 500 }
-lua_run function frz() print"freezing all" for k,v in next,ents.GetAll() do local g=v:GetPhysicsObject() if g:IsValid() then g:EnableMotion(false) end end  end
-lua_run function pen() print"freezing penetrating" for k,v in next,ents.GetAll() do local g=v:GetPhysicsObject() if g:IsValid() and g:IsPenetrating() then g:EnableMotion(false) end end  end
-lua_run hook.Add("AdditionalCollisions","a",function(cc) if cc > 1000 then frz() return 0 elseif cc>500 then pen() return 100 else print"extra" return 500 end end)
-
-lua_run hook.Add("AdditionalCollisions","a",function(a) error"nno" end)
-lua_run hook.Add("AdditionalCollisions","a",function(a) return 0 end)
-lua_run hook.Add("AdditionalCollisions","a",function(a) print("AdditionalCollisions",a) end)
-lua_run hook.Add("AdditionalCollisions","a",function(a) for k,v in next,ents.GetAll() do local g=v:GetPhysicsObject() if g:IsValid() and g:IsPenetrating() then g:EnableMotion(false) end end end)
-lua_run hook.Add("AdditionalCollisions","a",function(a) print"FRZ" end)
-
-#endif
 
 
 
-typedef bool (*	tFreezeCont ) ( void * , void ** , int   ) ;
-tFreezeCont original_ShouldFreezeContacts = NULL;
-MologieDetours::Detour<tFreezeCont>* detour_ShouldFreezeContacts = NULL;
-int lastCount=0;
-int rettbl=LUA_NOREF;
-
-bool hook_ShouldFreezeContacts( void * thisptr, IPhysicsObject ** pObjectList, int objectCount )
+bool hook_CheckIP( netadr_s & addr )
 {
 	bool ret = false;
 	if (!L) return ret;
 	
 	lua_getglobal(L, "hook");                 		
 		lua_getfield(L, -1, "Run");              	
-		lua_pushstring(L,"ShouldFreezeContacts");  	
+		lua_pushstring(L,"CheckIP");  	
 		lua_pushinteger(L, objectCount);    	
 		lua_rawgeti(L, LUA_REGISTRYINDEX, rettbl);
 		
@@ -143,50 +130,47 @@ bool hook_ShouldFreezeContacts( void * thisptr, IPhysicsObject ** pObjectList, i
 }
 
 
-static bool loaded = false;
 extern "C" __attribute__( ( visibility("default") ) ) int gmod13_open( lua_State* LL )
 {
-	void *lHandle = dlopen( "garrysmod/bin/server_srv.so", RTLD_LAZY  );
+	void *lHandle = dlopen( "bin/engine_srv.so", RTLD_LAZY  );
 
 	L=LL;
-	lua_newtable(L);
-	rettbl = luaL_ref(L, LUA_REGISTRYINDEX);
-	
-	if (loaded) return 0;
-	
+
 	if ( lHandle )
 	{
-		
-		original_AdditionalCollisionChecksThisTick = ResolveSymbol( lHandle, "_ZN15CCollisionEvent33AdditionalCollisionChecksThisTickEi" );
-		if (original_AdditionalCollisionChecksThisTick) {
+		 
+ 
+		original_CheckIPInternal = ResolveSymbol( lHandle, "_ZN12CIPRateLimit15CheckIPInternalE8netadr_s" );
+		if (original_CheckIPInternal) {
 			try {
-				detour_AdditionalCollisionChecksThisTick = new MologieDetours::Detour<tCollcheck>(original_AdditionalCollisionChecksThisTick, hook_AdditionalCollisionChecksThisTick);
+				detour_CheckIPInternal = new MologieDetours::Detour<tCheckIPInternal>(original_CheckIPInternal, hook_CheckIPInternal);
 				loaded = true;
 			}
 			catch(MologieDetours::DetourException &e) {
-				LOG("AdditionalCollisionChecksThisTick: Detour failed: Internal error?\n");
+				LOG("CheckIPInternal: Detour failed: Internal error?\n");
 			}
 		} else {
-			LOG("AdditionalCollisionChecksThisTick: Detour failed: Signature not found. (plugin needs updating)\n");
+			LOG("CheckIPInternal: Detour failed: Signature not found. (plugin needs updating)\n");
 		}
 
 		
-		original_ShouldFreezeContacts = ResolveSymbol( lHandle, "_ZN15CCollisionEvent20ShouldFreezeContactsEPP14IPhysicsObjecti" );
-		if (original_ShouldFreezeContacts) {
+		original_CheckIP = ResolveSymbol( lHandle, "_ZN12CIPRateLimit7CheckIPE8netadr_s" );
+		if (original_CheckIP) {
 			try {
-				detour_ShouldFreezeContacts = new MologieDetours::Detour<tFreezeCont>(original_ShouldFreezeContacts, hook_ShouldFreezeContacts);
+				detour_CheckIP = new MologieDetours::Detour<tCheckIP>(original_CheckIP, hook_CheckIP);
 				loaded = true;
 			}
 			catch(MologieDetours::DetourException &e) {
-				LOG("ShouldFreezeContacts: Detour failed: Internal error?\n");
+				LOG("CheckIP: Detour failed: Internal error?\n");
 			}
 		} else {
-			LOG("ShouldFreezeContacts: Detour failed: Signature not found. (plugin needs updating)\n");
+			LOG("CheckIP: Detour failed: Signature not found. (plugin needs updating)\n");
 		}
 
 		dlclose( lHandle );
-	} else {
-		LOG("AdditionalCollisionChecksThisTick: Detour failed. File changed?\n");
+	} else 
+	{
+		LOG("handle failed???\n");
 	}
 	
 	return 0;
@@ -194,6 +178,8 @@ extern "C" __attribute__( ( visibility("default") ) ) int gmod13_open( lua_State
 
 extern "C" __attribute__( ( visibility("default") ) ) int gmod13_close( lua_State* LL )
 {
+	delete detour_CheckIPInternal;
+	delete original_CheckIP;
 	L = NULL;
 	return 0;
 }
