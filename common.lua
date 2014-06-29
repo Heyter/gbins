@@ -117,7 +117,6 @@ local include_helpers = {
 		func = function(_,i)
 			includedirs{HOOKING}
 			if i then
-				print"EEK"
 				files{HOOKING..'/hde.cpp'}
 			end
 		end,
