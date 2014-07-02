@@ -22,6 +22,18 @@
 #define __MACOSX__
 #endif
 
+
+#ifdef __WIN32__
+	#include "sigscan/sigscan.h"
+	#include <windows.h>
+#elif defined __LINUX__
+	extern "C" {
+		#include <dlfcn.h>
+	}
+	#define PVOID void *
+#endif
+
+
 #if !defined(LUA_VERSION)
 struct luaL_Reg;
 struct lua_State;

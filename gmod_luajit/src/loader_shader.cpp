@@ -1,3 +1,6 @@
+
+#ifdef SHADERPLUGIN
+	
 #include "StdAfx.h"
 
 #include "luareplace.h"
@@ -101,3 +104,5 @@ void CShaderDLL::InsertShader( IShader *pShader )
 	Assert( pShader );
 	m_ShaderList.AddToTail( pShader );
 }
+
+#endif

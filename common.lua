@@ -166,12 +166,14 @@ local include_helpers = {
 	luajit={ -- luajit
 		func = function(_,i)
 			includedirs{LUAJIT..'/src'}
-			libdirs{LUAJIT..'/src'} -- lua_shared
+			libdirs{LUAJIT..'/src'}
 			if i then
 				configuration 		"windows"
-					links			{"lua51"}
+					libdirs{LUAJIT..'/src'}
+					links_static			"lua51"
 				configuration 		"linux"
-					links			{"lua51"}
+					libdirs{LUAJIT..'/src'}
+					links_static			"luajit"
 			end
 		end,
 	},

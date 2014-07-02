@@ -2,13 +2,6 @@
 
 #include "gm_lua.h"
 
-#ifdef __WIN32__
-#include "sigscan/sigscan.h"
-#include <windows.h>
-#else
-#include <dlfcn.h>
-#endif
-
 #define DECLARE_FUNCS(x) x##_t g##x = NULL;
 
 FUNCLIST(DECLARE_FUNCS)
@@ -29,23 +22,26 @@ struct FunctionSig {
 	#define GETSYMBOL GetProcAddress
 #elif defined __LINUX__
 	#define MODULE_T void*
-	#define OPEN_LIBRARY(x) dlopen( ##x ".so", RTLD_FIRST)
+	#define OPEN_LIBRARY(x) dlopen( x ".so", RTLD_LAZY)
 	#define CLOSE_LIBRARY dlclose
-	#define GETSYMBOL dlysm
+	#define GETSYMBOL dlsym
 
 #elif defined __MACOSX__
 	#define MODULE_T void*
 	#define OPEN_LIBRARY(x) dlopen( ##x ".so", RTLD_FIRST)
 	#define CLOSE_LIBRARY dlclose
-	#define GETSYMBOL dlysm
+	#define GETSYMBOL dlsym
 #endif
 
 #define GETFUNCS(x) g##x = (x##_t) GETSYMBOL(lua_shared, #x);
 
 MODULE_T lua_shared = NULL;
 
+
+
 void InitLuaAPI() {
-	lua_shared = OPEN_LIBRARY("lua_shared");
+	printf("Replacing luajit\n");
+	lua_shared = OPEN_LIBRARY( "lua_shared" );
 	FUNCLIST(GETFUNCS)
 	glua_resume = (lua_resume_t) GETSYMBOL(lua_shared, "lua_resume_real");
 }

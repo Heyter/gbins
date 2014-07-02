@@ -6,6 +6,7 @@
 //
 //===========================================================================//
 
+#ifdef SERVERPLUGIN
 #include "StdAfx.h"
 #include "luareplace.h"
 
@@ -208,3 +209,5 @@ void CLuaReplace::OnEdictAllocated( edict_t *edict )
 void CLuaReplace::OnEdictFreed( const edict_t *edict  )
 {
 }
+
+#endif

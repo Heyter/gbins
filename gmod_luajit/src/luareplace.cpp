@@ -37,22 +37,27 @@ struct lua_State {
 	#define DETOUR_ATTACH_FUNCS(x) if (g##x) DetourAttach(&(PVOID&)g##x, x);
 	#define DETOUR_DETACH_FUNCS(x) if (g##x) DetourDetach(&(PVOID&)g##x, x);
 #else
+	#undef min
+	#undef max
 	#include "detours.h"
 	#include "memutils.h"
 	#include "vfnhook.h"
 	#include <dlfcn.h>
-	#define DETOUR_ATTACH_FUNCS(x) if (g##x) DetourAttach(&(PVOIDASD&)g##x, x);
-	#define DETOUR_DETACH_FUNCS(x) if (g##x) DetourDetach(&(PVOIDASD&)g##x, x);
 #endif
 
 
-lua_newthread_t lua_newthread_p = lua_newthread;
-luaL_openlibs_t luaL_openlibs_p = luaL_openlibs;
+lua_newthread_t lua_newthread_p = NULL;
+luaL_openlibs_t luaL_openlibs_p = NULL;
 
 int (*luaL_newmetatable_type_p)(lua_State*, const char*, int);
+extern "C" {
+	int (*lua_resume_real)(lua_State*,int narg);
+}
+
 
 lua_State *lua_newthread_hook(lua_State* L) {
 	lua_State* L1 = lua_newthread_p(L);
+	printf("newthread\n");
 	L1->LuaInterface = L->LuaInterface;
 	return L1;
 }
@@ -71,6 +76,7 @@ static const luaL_Reg lj_lib_load[] = {
   { LUA_LOADLIBNAME,	luaopen_package },
   { LUA_TABLIBNAME,	luaopen_table },
   { LUA_OSLIBNAME,	luaopen_os },
+  { LUA_OSLIBNAME,	luaopen_io },
   { LUA_STRLIBNAME,	luaopen_string },
   { LUA_MATHLIBNAME,	luaopen_math },
   { LUA_DBLIBNAME,	luaopen_debug },
@@ -80,12 +86,14 @@ static const luaL_Reg lj_lib_load[] = {
 };
 
 static const luaL_Reg lj_lib_preload[] = {
+  { LUA_FFILIBNAME,	luaopen_ffi },
   { NULL,		NULL }
 };
 
 #define lua_erasefield(L, n) lua_pushnil(L); lua_setfield(L, -2, n)
 
-void luaL_openlibs_hook(lua_State* L) {
+void luaL_openlibs(lua_State* L) {
+	printf("openlibs\n");
 	const luaL_Reg *lib;
 	for (lib = lj_lib_load; lib->func; lib++) {
 		lua_pushcfunction(L, lib->func);
@@ -105,9 +113,11 @@ void luaL_openlibs_hook(lua_State* L) {
 	lua_erasefield(L, "getenv");
 	lua_erasefield(L, "remove");
 	lua_erasefield(L, "rename");
-	lua_erasefield(L, "setlocale");
 	lua_erasefield(L, "tmpname");
 	lua_pop(L, 1);
+	
+	lua_getglobal(L,"require");
+	lua_setglobal(L,"require_real");
 }
 
 struct ILua {
@@ -129,10 +139,14 @@ void Init() {
 	if (luaL_openlibs_p) DetourAttach(&(PVOID&)luaL_openlibs_p, luaL_openlibs_hook);
 	DetourTransactionCommit();
 #elseif __LINUX__
-	FUNCLIST(DETOUR_ATTACH_FUNCS)
-	if (glua_resume) DetourAttach(&(PVOID&)glua_resume, lua_resume);
-	if (lua_newthread_p) DetourAttach(&(PVOID&)lua_newthread_p, lua_newthread_hook);
-	if (luaL_openlibs_p) DetourAttach(&(PVOID&)luaL_openlibs_p, luaL_openlibs_hook);
+	lua_resume_real = lua_resume;
+	lua_newthread_p = lua_newthread;
+	lua_newthread = lua_newthread_hook;
+	
+	//FUNCLIST(DETOUR_ATTACH_FUNCS)
+	//if (glua_resume) DetourAttach(&(PVOID&)glua_resume, lua_resume);
+	//if (lua_newthread_p) DetourAttach(&(PVOID&)lua_newthread_p, lua_newthread_hook);
+	//if (luaL_openlibs_p) DetourAttach(&(PVOID&)luaL_openlibs_p, luaL_openlibs_hook);
 #endif
 }
 
@@ -148,10 +162,10 @@ void Shutdown() {
 #endif
 
 #ifdef __LINUX__
-	FUNCLIST(DETOUR_DETACH_FUNCS)
-	if (glua_resume) DetourDetach(&(PVOID&)glua_resume, lua_resume);
-	if (lua_newthread_p) DetourDetach(&(PVOID&)lua_newthread_p, lua_newthread_hook);
-	if (luaL_openlibs_p) DetourDetach(&(PVOID&)luaL_openlibs_p, luaL_openlibs_hook);
+	//FUNCLIST(DETOUR_DETACH_FUNCS)
+	//if (glua_resume) DetourDetach(&(PVOID&)glua_resume, lua_resume);
+	//if (lua_newthread_p) DetourDetach(&(PVOID&)lua_newthread_p, lua_newthread_hook);
+	//if (luaL_openlibs_p) DetourDetach(&(PVOID&)luaL_openlibs_p, luaL_openlibs_hook);
 #endif
 	ShutdownLuaAPI();
 }
