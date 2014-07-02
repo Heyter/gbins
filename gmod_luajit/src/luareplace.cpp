@@ -29,12 +29,22 @@ struct lua_State {
 
 }
 #include "gm_lua.h"
-#include <windows.h>
-#include "sigscan/sigscan.h"
-#include "detours/detours.h"
 
-#define DETOUR_ATTACH_FUNCS(x) if (g##x) DetourAttach(&(PVOID&)g##x, x);
-#define DETOUR_DETACH_FUNCS(x) if (g##x) DetourDetach(&(PVOID&)g##x, x);
+#ifdef __WIN32__
+	#include <windows.h>
+	#include "sigscan/sigscan.h"
+	#include "detours/detours.h"
+	#define DETOUR_ATTACH_FUNCS(x) if (g##x) DetourAttach(&(PVOID&)g##x, x);
+	#define DETOUR_DETACH_FUNCS(x) if (g##x) DetourDetach(&(PVOID&)g##x, x);
+#else
+	#include "detours.h"
+	#include "memutils.h"
+	#include "vfnhook.h"
+	#include <dlfcn.h>
+	#define DETOUR_ATTACH_FUNCS(x) if (g##x) DetourAttach(&(PVOIDASD&)g##x, x);
+	#define DETOUR_DETACH_FUNCS(x) if (g##x) DetourDetach(&(PVOIDASD&)g##x, x);
+#endif
+
 
 lua_newthread_t lua_newthread_p = lua_newthread;
 luaL_openlibs_t luaL_openlibs_p = luaL_openlibs;
@@ -110,6 +120,7 @@ void Init() {
 #ifdef _DEBUG
 	DebugLuaAPI();
 #endif
+#ifdef __WIN32__
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	FUNCLIST(DETOUR_ATTACH_FUNCS)
@@ -117,9 +128,16 @@ void Init() {
 	if (lua_newthread_p) DetourAttach(&(PVOID&)lua_newthread_p, lua_newthread_hook);
 	if (luaL_openlibs_p) DetourAttach(&(PVOID&)luaL_openlibs_p, luaL_openlibs_hook);
 	DetourTransactionCommit();
+#elseif __LINUX__
+	FUNCLIST(DETOUR_ATTACH_FUNCS)
+	if (glua_resume) DetourAttach(&(PVOID&)glua_resume, lua_resume);
+	if (lua_newthread_p) DetourAttach(&(PVOID&)lua_newthread_p, lua_newthread_hook);
+	if (luaL_openlibs_p) DetourAttach(&(PVOID&)luaL_openlibs_p, luaL_openlibs_hook);
+#endif
 }
 
 void Shutdown() {
+#ifdef __WIN32__
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	FUNCLIST(DETOUR_DETACH_FUNCS)
@@ -127,5 +145,13 @@ void Shutdown() {
 	if (lua_newthread_p) DetourDetach(&(PVOID&)lua_newthread_p, lua_newthread_hook);
 	if (luaL_openlibs_p) DetourDetach(&(PVOID&)luaL_openlibs_p, luaL_openlibs_hook);
 	DetourTransactionCommit();
+#endif
+
+#ifdef __LINUX__
+	FUNCLIST(DETOUR_DETACH_FUNCS)
+	if (glua_resume) DetourDetach(&(PVOID&)glua_resume, lua_resume);
+	if (lua_newthread_p) DetourDetach(&(PVOID&)lua_newthread_p, lua_newthread_hook);
+	if (luaL_openlibs_p) DetourDetach(&(PVOID&)luaL_openlibs_p, luaL_openlibs_hook);
+#endif
 	ShutdownLuaAPI();
 }

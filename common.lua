@@ -163,18 +163,15 @@ local include_helpers = {
 			end
 		end,
 	},
-	luajit={ -- gmod luajit compat
+	luajit={ -- luajit
 		func = function(_,i)
 			includedirs{LUAJIT..'/src'}
-			libdirs{LUAJIT} -- lua_shared
+			libdirs{LUAJIT..'/src'} -- lua_shared
 			if i then
 				configuration 		"windows"
-					links			{"lua_shared"}
+					links			{"lua51"}
 				configuration 		"linux"
-					-- massive hack, but it works just the way I wanted it to
-					linkoptions		{"-Wl,-rpath='$$ORIGIN'"}
-					linkoptions		{"garrysmod/bin/lua_shared_srv.so"}
-					prelinkcommands	{"mkdir -p garrysmod/bin && ln -s -f "..SRCDS_DIR.."/garrysmod/bin/lua_shared_srv.so garrysmod/bin/lua_shared_srv.so "}
+					links			{"lua51"}
 			end
 		end,
 	},

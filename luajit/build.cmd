@@ -1,5 +1,5 @@
 @call ../settings.cmd
+@cd src
 setenv /release /x86
-cd src
-@call msvcbuild.bat static
-pause
+call msvcbuild.bat static
+@pause
