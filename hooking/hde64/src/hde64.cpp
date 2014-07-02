@@ -5,16 +5,18 @@
 *
 */
 
-#include <boost/cstdint.hpp>
+#include <stdint.h>
 #include <string.h>
 #include "../include/hde64.h"
 #include "../include/table64.h"
 
+#pragma warning(disable:4701 4706)
+
 unsigned int hde64_disasm(const void *code, hde64s *hs)
 {
-	boost::uint8_t x, c, *p = (boost::uint8_t*)code, cflags, opcode, pref = 0;
-	boost::uint8_t *ht = hde64_table, m_mod, m_reg, m_rm, disp_size = 0;
-	boost::uint8_t op64 = 0;
+	uint8_t x, c, *p = (uint8_t*)code, cflags, opcode, pref = 0;
+	uint8_t *ht = hde64_table, m_mod, m_reg, m_rm, disp_size = 0;
+	uint8_t op64 = 0;
 
 	memset(hs,0,sizeof(hde64s));
 
@@ -50,7 +52,7 @@ unsigned int hde64_disasm(const void *code, hde64s *hs)
 	}
 pref_done:
 
-	hs->flags = (boost::uint32_t)pref << 23;
+	hs->flags = (uint32_t)pref << 23;
 
 	if (!pref)
 		pref |= PRE_NONE;
@@ -92,9 +94,9 @@ error_opcode:
 
 	x = 0;
 	if (cflags & C_GROUP) {
-		boost::uint16_t t;
-		t = *(boost::uint16_t*)(ht + (cflags & 0x7f));
-		cflags = (boost::uint8_t)t;
+		uint16_t t;
+		t = *(uint16_t*)(ht + (cflags & 0x7f));
+		cflags = (uint8_t)t;
 		x = (uint8_t)(t >> 8);
 	}
 
@@ -115,7 +117,7 @@ error_opcode:
 			hs->flags |= F_ERROR | F_ERROR_OPCODE;
 
 		if (!hs->opcode2 && opcode >= 0xd9 && opcode <= 0xdf) {
-			boost::uint8_t t = opcode - 0xd9;
+			uint8_t t = opcode - 0xd9;
 			if (m_mod == 3) {
 				ht = hde64_table + DELTA_FPU_MODRM + t*8;
 				t = ht[m_reg] << m_rm;
@@ -131,7 +133,7 @@ error_opcode:
 			if (m_mod == 3) {
 				hs->flags |= F_ERROR | F_ERROR_LOCK;
 			} else {
-				boost::uint8_t* table_end, op = opcode;
+				uint8_t* table_end, op = opcode;
 				if (hs->opcode2) {
 					ht = hde64_table + DELTA_OP2_LOCK_OK;
 					table_end = ht + DELTA_OP_ONLY_MEM - DELTA_OP2_LOCK_OK;
@@ -184,7 +186,7 @@ no_lock_error:
 		}
 
 		if (m_mod == 3) {
-			boost::uint8_t* table_end;
+			uint8_t* table_end;
 			if (hs->opcode2) {
 				ht = hde64_table + DELTA_OP2_ONLY_MEM;
 				table_end = ht + sizeof(hde64_table) - DELTA_OP2_ONLY_MEM;
@@ -265,11 +267,11 @@ no_error_operand:
 			break;
 		case 2:
 			hs->flags |= F_DISP16;
-			hs->disp.disp16 = *(boost::uint16_t*)p;
+			hs->disp.disp16 = *(uint16_t*)p;
 			break;
 		case 4:
 			hs->flags |= F_DISP32;
-			hs->disp.disp32 = *(boost::uint32_t*)p;
+			hs->disp.disp32 = *(uint32_t*)p;
 		}
 		p += disp_size;
 	} else if (pref & PRE_LOCK)
@@ -279,7 +281,7 @@ no_error_operand:
 		if (cflags & C_REL32) {
 			if (pref & PRE_66) {
 				hs->flags |= F_IMM16 | F_RELATIVE;
-				hs->imm.imm16 = *(boost::uint16_t*)p;
+				hs->imm.imm16 = *(uint16_t*)p;
 				p += 2;
 				goto disasm_done;
 			}
@@ -287,11 +289,11 @@ no_error_operand:
 		}
 		if (op64) {
 			hs->flags |= F_IMM64;
-			hs->imm.imm64 = *(boost::uint64_t*)p;
+			hs->imm.imm64 = *(uint64_t*)p;
 			p += 8;
 		} else if (!(pref & PRE_66)) {
 			hs->flags |= F_IMM32;
-			hs->imm.imm32 = *(boost::uint32_t*)p;
+			hs->imm.imm32 = *(uint32_t*)p;
 			p += 4;
 		} else
 			goto imm16_ok;
@@ -301,7 +303,7 @@ no_error_operand:
 	if (cflags & C_IMM16) {
 imm16_ok:
 		hs->flags |= F_IMM16;
-		hs->imm.imm16 = *(boost::uint16_t*)p;
+		hs->imm.imm16 = *(uint16_t*)p;
 		p += 2;
 	}
 	if (cflags & C_IMM8) {
@@ -312,7 +314,7 @@ imm16_ok:
 	if (cflags & C_REL32) {
 rel32_ok:
 		hs->flags |= F_IMM32 | F_RELATIVE;
-		hs->imm.imm32 = *(boost::uint32_t*)p;
+		hs->imm.imm32 = *(uint32_t*)p;
 		p += 4;
 	} else if (cflags & C_REL8) {
 		hs->flags |= F_IMM8 | F_RELATIVE;
@@ -321,7 +323,7 @@ rel32_ok:
 
 disasm_done:
 
-	if ((hs->len = (boost::uint8_t)(p-(boost::uint8_t*)code)) > 15) {
+	if ((hs->len = (uint8_t)(p-(uint8_t*)code)) > 15) {
 		hs->flags |= F_ERROR | F_ERROR_LENGTH;
 		hs->len = 15;
 	}

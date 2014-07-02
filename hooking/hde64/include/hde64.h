@@ -10,7 +10,7 @@
 #ifndef _HDE64_H_
 #define _HDE64_H_
 
-#include <boost/cstdint.hpp>
+#include <stdint.h>
 
 #define F_MODRM         0x00000001
 #define F_SIB           0x00000002
@@ -52,39 +52,39 @@
 #pragma pack(push,1)
 
 typedef struct {
-	boost::uint8_t len;
-	boost::uint8_t p_rep;
-	boost::uint8_t p_lock;
-	boost::uint8_t p_seg;
-	boost::uint8_t p_66;
-	boost::uint8_t p_67;
-	boost::uint8_t rex;
-	boost::uint8_t rex_w;
-	boost::uint8_t rex_r;
-	boost::uint8_t rex_x;
-	boost::uint8_t rex_b; 
-	boost::uint8_t opcode;
-	boost::uint8_t opcode2;
-	boost::uint8_t modrm;
-	boost::uint8_t modrm_mod;
-	boost::uint8_t modrm_reg;
-	boost::uint8_t modrm_rm;
-	boost::uint8_t sib;
-	boost::uint8_t sib_scale;
-	boost::uint8_t sib_index;
-	boost::uint8_t sib_base;
+	uint8_t len;
+	uint8_t p_rep;
+	uint8_t p_lock;
+	uint8_t p_seg;
+	uint8_t p_66;
+	uint8_t p_67;
+	uint8_t rex;
+	uint8_t rex_w;
+	uint8_t rex_r;
+	uint8_t rex_x;
+	uint8_t rex_b; 
+	uint8_t opcode;
+	uint8_t opcode2;
+	uint8_t modrm;
+	uint8_t modrm_mod;
+	uint8_t modrm_reg;
+	uint8_t modrm_rm;
+	uint8_t sib;
+	uint8_t sib_scale;
+	uint8_t sib_index;
+	uint8_t sib_base;
 	union {
-		boost::uint8_t imm8;
-		boost::uint16_t imm16;
-		boost::uint32_t imm32;
-		boost::uint64_t imm64;
+		uint8_t imm8;
+		uint16_t imm16;
+		uint32_t imm32;
+		uint64_t imm64;
 	} imm;
 	union {
-		boost::uint8_t disp8;
-		boost::uint16_t disp16;
-		boost::uint32_t disp32;
+		uint8_t disp8;
+		uint16_t disp16;
+		uint32_t disp32;
 	} disp;
-	boost::uint32_t flags;
+	uint32_t flags;
 } hde64s;
 
 #pragma pack(pop)
