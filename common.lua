@@ -51,6 +51,7 @@ BACKWARDS_HEADERS  		= fixdir "backwards_headers"
 HOOKING  				= fixdir "hooking"
 SIGSCANNING 			= fixdir "sigscanning"
 LUA51 					= fixdir "lua51"
+LUAJIT 					= fixdir "luajit"
 SOURCE_SDK				= fixdir (SOURCE_SDK)
 SRCDS_DIR				= fixdir (SRCDS_DIR)
 STEAMWORKS_SDK			= fixdir (STEAMWORKS_SDK)
@@ -159,7 +160,21 @@ local include_helpers = {
 					linkoptions		{"-Wl,-rpath='$$ORIGIN'"}
 					linkoptions		{"garrysmod/bin/lua_shared_srv.so"}
 					prelinkcommands	{"mkdir -p garrysmod/bin && ln -s -f "..SRCDS_DIR.."/garrysmod/bin/lua_shared_srv.so garrysmod/bin/lua_shared_srv.so "}
-					
+			end
+		end,
+	},
+	luajit={ -- gmod luajit compat
+		func = function(_,i)
+			includedirs{LUAJIT..'/src'}
+			libdirs{LUAJIT} -- lua_shared
+			if i then
+				configuration 		"windows"
+					links			{"lua_shared"}
+				configuration 		"linux"
+					-- massive hack, but it works just the way I wanted it to
+					linkoptions		{"-Wl,-rpath='$$ORIGIN'"}
+					linkoptions		{"garrysmod/bin/lua_shared_srv.so"}
+					prelinkcommands	{"mkdir -p garrysmod/bin && ln -s -f "..SRCDS_DIR.."/garrysmod/bin/lua_shared_srv.so garrysmod/bin/lua_shared_srv.so "}
 			end
 		end,
 	},
