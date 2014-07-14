@@ -82,15 +82,13 @@ IVEngineClient *g_pEngineClient = NULL;
 ICvar *g_pCVarClient = NULL;
 ICvar *g_pCVarServer = NULL;
 
-// CSigScan wrapper
 #ifdef _WIN32
 	#include "../simplescan/csimplescan.h"
 #endif
 
-// CNetChan::ProcessMessages function pointer
 void *CNetChan_ProcessMessages_T = NULL;
 
-// Garbage collection
+// Garbage collection WARNING: NOT USED!?
 LUA_FUNCTION( std__gc )
 {
 	UsesLua();
@@ -100,7 +98,7 @@ LUA_FUNCTION( std__gc )
 	return 0;
 }
 
-// Checks if the server is dedicated
+
 GLBL_FUNCTION( sourcenet_isDedicatedServer )
 {
 	UsesLua();
@@ -110,7 +108,6 @@ GLBL_FUNCTION( sourcenet_isDedicatedServer )
 	return 1;
 }
 
-// Module load
 int Open( lua_State *L )
 {
 	UsesLua();
@@ -661,7 +658,6 @@ int Open( lua_State *L )
 	return 0;
 }
 
-// Module shutdown
 int Close( lua_State *L )
 {
 	UsesLua();
