@@ -16,7 +16,7 @@
 )
 
 :cont
-@call %VSTOOLS%\vsvars32.bat
+@call "%VSTOOLS%"\vsvars32.bat
 
 @msbuild /? > nul
 @IF ERRORLEVEL 0 GOTO OKAY
