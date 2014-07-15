@@ -9,10 +9,12 @@
 @IF defined VS100COMNTOOLS @(
 	@set VSTOOLS=%VS100COMNTOOLS%
 	@set VSVER=100
+	@set VSVERR=10
 )
 @IF defined VS120COMNTOOLS @(
 	@set VSTOOLS=%VS120COMNTOOLS%
 	@set VSVER=120
+	@set VSVERR=12
 )
 
 :cont
