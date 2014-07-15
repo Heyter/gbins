@@ -9,11 +9,11 @@
 @goto FAIL
 
 :vs2013
-@FOR %%c in (windows\vs2013\*.sln) DO msbuild /target:Release /nologo %%c
+@FOR %%c in (windows\vs2013\*.sln) DO msbuild /nologo %%c
 @goto END
 
 :vs2010
-@FOR %%c in (windows\vs2010\*.sln) DO msbuild /target:Release %%c
+@FOR %%c in (windows\vs2010\*.sln) DO msbuild /nologo %%c
 @goto END
 
 :FAIL
