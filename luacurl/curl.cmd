@@ -1,7 +1,7 @@
 @call ../settings.cmd
 
-rem wget http://curl.haxx.se/download/curl-7.37.0.zip
-rem unzip curl-7.37.0.zip
+wget http://curl.haxx.se/download/curl-7.37.0.zip
+unzip curl-7.37.0.zip
 del curl-7.37.0.zip
 move curl-7.37.0 curl-src
 cd curl-src\winbuild
