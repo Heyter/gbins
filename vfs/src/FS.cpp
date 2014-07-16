@@ -1,11 +1,11 @@
 #include "FS.h"
 
+namespace FS
+{
 
-namespace FS {
+IFileSystem *g_pFilesystem = NULL;
 
-IFileSystem* g_pFilesystem = NULL;
-
-void* CreateInterface(const char *pName, int *pReturnCode)
+void *CreateInterface( const char *pName, int *pReturnCode )
 {
 	if( pReturnCode )
 		*pReturnCode = IFACE_FAILED;
@@ -13,42 +13,40 @@ void* CreateInterface(const char *pName, int *pReturnCode)
 	return NULL;
 }
 
-bool LoadFilesystem(void)
+bool LoadFilesystem( )
 {
-
-	CreateInterfaceFn _CreateInterface = Sys_GetFactory(FILESYSTEM_STEAM_DLL);
+	CreateInterfaceFn _CreateInterface = Sys_GetFactory( FILESYSTEM_STEAM_DLL );
 	
-	if( !_CreateInterface )	return false;
-
+	if( !_CreateInterface )
+		return false;
 
 	int nReturnCode = 0;
-	g_pFilesystem = (IFileSystem*)_CreateInterface(FILESYSTEM_INTERFACE_VERSION, &nReturnCode);
+	g_pFilesystem = (IFileSystem *)_CreateInterface( FILESYSTEM_INTERFACE_VERSION, &nReturnCode );
 
 
-if( g_pFilesystem )
+	if( g_pFilesystem )
 	{
-		g_pFilesystem->Connect(CreateInterface);
+		g_pFilesystem->Connect( CreateInterface );
 
 		// TODO: Figure out if do we need to call Init?
 		// apparently it works without, so leave it alone.
 		// g_pFilesystem->Init();
 
-		char pszSearchPath[512] = {0};
-		sprintf(pszSearchPath, "garrysmod/%s", FILESYSTEM_JAIL_PATH);
+		char pszSearchPath[512] = { 0 };
+		sprintf( pszSearchPath, "garrysmod/%s", FILESYSTEM_JAIL_PATH );
 
-		g_pFilesystem->AddSearchPath(pszSearchPath, "GAME");
+		g_pFilesystem->AddSearchPath( pszSearchPath, "GAME" );
 	}
 
 	return true;
 }
 
-bool UnloadFilesystem(void)
+bool UnloadFilesystem( )
 {
 	if( g_pFilesystem )
-		g_pFilesystem->Disconnect();
+		g_pFilesystem->Disconnect( );
 
 	return true;
 }
-
 
 }

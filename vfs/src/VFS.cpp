@@ -3,110 +3,102 @@
 #include "FS.h"
 #include "CRC.h"
 
-#include "ILuaModuleManager.h"
+#include <GarrysMod/Lua/Interface.h>
 
 #include <vector>
 #include <string>
 
-GMOD_MODULE(Startup, Cleanup);
-
-namespace VFS {
+namespace VFS
+{
 
 struct VFS_UserData
 {
-	void*			data;
-	unsigned char	type;
-	bool			valid;
+	FileHandle_t data;
+	unsigned char type;
+	bool valid;
 };
 
-
-#define GET_FH( ) ( (FileHandle_t *)( (VFS_UserData *)LUA->GetUserdata( 1 ) )->data )
+#define GET_FH( ) ( ( (VFS_UserData *)LUA->GetUserdata( 1 ) )->data )
 
 static std::vector<std::string> s_vecDisallowed;
 
-static bool CheckIsValid(VFS_UserData* ud)
+static bool CheckIsValid( VFS_UserData *ud )
 {
 	return ud->valid;
 }
 
-static bool IsExtensionDisallowed(const char* pszExt)
+static bool IsExtensionDisallowed( const char *pszExt )
 {
 	if( !pszExt )
 		return false;
 
-	for(std::vector<std::string>::iterator itr = s_vecDisallowed.begin();
-		itr != s_vecDisallowed.end();
-		itr++)
-	{
+	for( std::vector<std::string>::iterator itr = s_vecDisallowed.begin( ); itr != s_vecDisallowed.end( ); ++itr )
 		if( *itr == pszExt )
 			return true;
-	}
+
 	return false;
 }
 
-static void FixSlashes(char* pszPath)
+static void FixSlashes( char *pszPath )
 {
 	while( *pszPath )
 	{
 		if( *pszPath == '\\' )
 			*pszPath = '/';
 
-		pszPath++;
+		++pszPath;
 	}
 }
 
-static int Open(lua_State* L)
+static int Open( lua_State *state )
 {
-	Lua()->CheckType(1, GLua::TYPE_STRING);
-	Lua()->CheckType(2, GLua::TYPE_STRING);
+	LUA->CheckType( 1, GarrysMod::Lua::Type::STRING );
+	LUA->CheckType( 2, GarrysMod::Lua::Type::STRING );
 
-	char* pszPath = (char*)Lua()->GetString(1);
-	const char* pszMode = Lua()->GetString(2);
+	char *pszPath = (char *)LUA->GetString( 1 );
+	const char *pszMode = LUA->GetString( 2 );
 
 	// welp
 	char str2[255];
-	str2[0]=0;
-	strncpy( str2, pszPath, sizeof(str2) );
+	str2[0] = 0;
+	strncpy( str2, pszPath, sizeof( str2 ) );
 	pszPath = str2;
 	
-	FixSlashes(pszPath);
+	FixSlashes( pszPath );
 	
 	if( !FS::g_pFilesystem )
-	{
-		Lua()->Error("Filesystem not initialized");
-		return 0;
-	}
+		LUA->ThrowError( "Filesystem not initialized" );
 
 	// Path validation.
-#if defined(WIN32)
+#if defined WIN32
 	if( pszPath[1] == ':' )
 	{
-		Lua()->ErrorNoHalt("Invalid Path ( Absolute path not allowed )");
-		Lua()->PushNil();
+		Msg( "Invalid Path ( Absolute path not allowed )" );
+		LUA->PushNil( );
 	}
 #else
 	if( pszPath[1] == "/" )
 	{
-		Lua()->Error("Invalid Path ( Absolute path not allowed )");
-		Lua()->PushNil();
+		Msg( "Invalid Path ( Absolute path not allowed )" );
+		LUA->PushNil();
 	}
 #endif
-	else if( strstr(pszPath, "../") != NULL )
+	else if( strstr( pszPath, "../" ) != NULL )
 	{
-		Lua()->ErrorNoHalt("Invalid Path ( You can not leave the directory )");
-		Lua()->PushNil();
+		Msg( "Invalid Path ( You can not leave the directory )" );
+		LUA->PushNil( );
 	}
-	else if( IsExtensionDisallowed(strrchr(pszPath, '.')) )
+	else if( IsExtensionDisallowed( strrchr( pszPath, '.' ) ) )
 	{
-		Lua()->ErrorNoHalt("Extension disallowed");
-		Lua()->PushNil();
+		Msg( "Extension disallowed");
+		LUA->PushNil( );
 	}
 	else
 	{
-		char pszVFSPath[1024] = {0};
-		sprintf(pszVFSPath, "%s/%s", FILESYSTEM_JAIL_PATH, pszPath);
+		char pszVFSPath[1024] = { 0 };
+		sprintf( pszVFSPath, "%s/%s", FILESYSTEM_JAIL_PATH, pszPath );
 
-		char* pszDir = pszVFSPath;
+		char *pszDir = pszVFSPath;
 
 		while( *pszDir )
 		{
@@ -115,683 +107,684 @@ static int Open(lua_State* L)
 				char cTemp = *pszDir;
 				*pszDir = '\0';
 
-				FS::g_pFilesystem->CreateDirHierarchy(pszVFSPath, "GAME");
+				FS::g_pFilesystem->CreateDirHierarchy( pszVFSPath, "GAME" );
 
 				*pszDir = cTemp;
 			}
-			pszDir++;
+
+			++pszDir;
 		}
 
-		FileHandle_t fh = FS::g_pFilesystem->Open(pszVFSPath, pszMode, "GAME");
+		FileHandle_t fh = FS::g_pFilesystem->Open( pszVFSPath, pszMode, "GAME" );
 		if( fh != NULL )
 		{
-			
-			VFS_UserData* userdata = (VFS_UserData* )LUA->NewUserdata( sizeof( VFS_UserData ) );
-				userdata->data  = &fh;																									\
-				userdata->type  = GarrysMod::Lua::Type::USERDATA;	
-				userdata->valid = true;
-				
-				FileHandle_t fh2 = *((FileHandle_t*) (userdata->data));
-				Warning("Create: %p %p==%p\n",userdata,fh,fh2);
-				
-			LUA->CreateMetaTableType( "IVFS", GarrysMod::Lua::Type::USERDATA );														\
+			VFS_UserData *userdata = (VFS_UserData *)LUA->NewUserdata( sizeof( VFS_UserData ) );
+			userdata->data = fh;
+			userdata->type = GarrysMod::Lua::Type::USERDATA;	
+			userdata->valid = true;
+
+			LUA->CreateMetaTableType( "IVFS", GarrysMod::Lua::Type::USERDATA );
 			LUA->SetMetaTable( -2 );
-			
 		}
-		
 		else
 		{
-			Lua()->PushNil();
+			LUA->PushNil( );
 		}
 	}
 
 	return 1;
 }
 
-static int IsValidFH(lua_State* L)
+static int IsValidFH( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
-	
-	FileHandle_t fh = *GET_FH( );
-	
-	
-	Warning("IsValidFH: %p %p\n",userdata,fh);
+	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
 	
 	if( !FS::g_pFilesystem )
-	{
-		Lua()->Error("Filesystem not initialized.");
-		return 0;
-	}
+		LUA->ThrowError("Filesystem not initialized.");
 
-	if( CheckIsValid(userdata) )
+	if( CheckIsValid( userdata ) )
 	{
-		LUA->PushBool(true);
+		LUA->PushBool( true );
 		return 1;
 	}
 	
 	return 0;
 }
 
-static int Close(lua_State* L)
+static int Close( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
-	
-	FileHandle_t fh = *GET_FH( );
-	Warning("Close: %p %p\n",userdata,fh);
+	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	FileHandle_t fh = GET_FH( );
 	
 	if( !FS::g_pFilesystem )
-	{
-		Lua()->Error("Filesystem not initialized.");
-		return 0;
-	}
+		LUA->ThrowError( "Filesystem not initialized." );
 
-	if( !CheckIsValid(userdata) )
-	{
-		Lua()->Error("Invalid handle value");
-		return 0;
-	}
+	if( !CheckIsValid( userdata ) )
+		LUA->ThrowError( "Invalid handle value" );
 
 	userdata->valid = false;
-	FS::g_pFilesystem->Close(fh);
+	FS::g_pFilesystem->Close( fh );
 	
 	return 0;
 }
 
-static int Flush(lua_State* L)
+static int Flush( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
-	
-	FileHandle_t fh = *GET_FH( );
+	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	FileHandle_t fh = GET_FH( );
+
 	if( !FS::g_pFilesystem )
-	{
-		Lua()->Error("Filesystem not initialized.");
-		return 0;
-	}
+		LUA->ThrowError( "Filesystem not initialized." );
 
 	if( !CheckIsValid(userdata) )
-	{
-		Lua()->Error("Invalid handle value");
-		return 0;
-	}
+		LUA->ThrowError( "Invalid handle value" );
 
-	FS::g_pFilesystem->Flush(fh);
+	FS::g_pFilesystem->Flush( fh );
 	
 	return 0;
 }
 
-static int Write(lua_State* L)
+static int Write( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
-	Lua()->CheckType(2, GLua::TYPE_NUMBER);
+	LUA->CheckType( 2, GarrysMod::Lua::Type::NUMBER );
 
-	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
-	
-	FileHandle_t fh = *GET_FH( );
-	Warning("WRITE: %p %p\n",fh,userdata);
-	unsigned int nWriteType = Lua()->GetInteger(2);
+	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	FileHandle_t fh = GET_FH( );
+
+	unsigned int nWriteType = (unsigned int)LUA->GetNumber( 2 );
 
 	if( !FS::g_pFilesystem )
-	{
-		Lua()->Error("Filesystem not initialized.");
-		return 0;
-	}
+		LUA->ThrowError( "Filesystem not initialized." );
 
-	if( !CheckIsValid(userdata) )
-	{
-		Lua()->Error("Invalid handle value");
-		return 0;
-	}
+	if( !CheckIsValid( userdata ) )
+		LUA->ThrowError( "Invalid handle value" );
 
 	int nWrite = 0;
 
-	switch(nWriteType)
+	switch( nWriteType )
 	{
-	case VFS_READWRITE_DATA:
+	case FS::ReadWrite_data:
 		{
-			Lua()->CheckType(3, GLua::TYPE_STRING);
+			LUA->CheckType( 3, GarrysMod::Lua::Type::STRING );
 			
-			unsigned int cubDataMax = -1;
-			const char* pData = Lua()->GetString(3,&cubDataMax);
+			unsigned int cubDataMax = 0;
+			const char *pData = LUA->GetString( 3, &cubDataMax );
 			unsigned int cubData = cubDataMax;
-			unsigned int nTop = Lua()->Top();
+			unsigned int nTop = LUA->Top( );
 
 			if( nTop >= 4 )
 			{
-				Lua()->CheckType(4, GLua::TYPE_NUMBER);
-				cubData = Lua()->GetInteger(4);
+				LUA->CheckType( 4, GarrysMod::Lua::Type::NUMBER );
+				cubData = (unsigned int)LUA->GetNumber( 4 );
 			}
 			
 			if( cubData > cubDataMax )
 				cubData = cubDataMax;
 
-			nWrite = FS::g_pFilesystem->Write(pData, cubData, fh);
+			nWrite = FS::g_pFilesystem->Write( pData, cubData, fh );
 		}
+
 		break;
-	case VFS_READWRITE_STRING:
+
+	case FS::ReadWrite_string:
 		{
-			Lua()->CheckType(3, GLua::TYPE_STRING);
-
-			const char* pData = Lua()->GetString(3);
-
-			nWrite = FS::g_pFilesystem->Write(pData, strlen(pData) + 1, fh);
+			LUA->CheckType( 3, GarrysMod::Lua::Type::STRING );
+			const char *pData = LUA->GetString( 3 );
+			nWrite = FS::g_pFilesystem->Write( pData, strlen( pData ) + 1, fh );
 		}
+
 		break;
-	case VFS_READWRITE_UINT32:
+
+	case FS::ReadWrite_uint32:
 		{
-			Lua()->CheckType(3, GLua::TYPE_NUMBER);
-
-			unsigned int nData = Lua()->GetInteger(3);
-
-			nWrite = FS::g_pFilesystem->Write(&nData, sizeof(unsigned int), fh);
+			LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
+			unsigned int nData = (unsigned int)LUA->GetNumber( 3 );
+			nWrite = FS::g_pFilesystem->Write( &nData, sizeof( nData ), fh );
 		}
+
 		break;
-	case VFS_READWRITE_UINT16:
+
+	case FS::ReadWrite_uint16:
 		{
-			Lua()->CheckType(3, GLua::TYPE_NUMBER);
-
-			unsigned short nData = (unsigned short)Lua()->GetInteger(3);
-
-			nWrite = FS::g_pFilesystem->Write(&nData, sizeof(unsigned short), fh);
+			LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
+			unsigned short nData = (unsigned short)LUA->GetNumber( 3 );
+			nWrite = FS::g_pFilesystem->Write( &nData, sizeof( nData ), fh );
 		}
+
 		break;
-	case VFS_READWRITE_BYTE:
-	case VFS_READWRITE_UINT8:
+
+	case FS::ReadWrite_byte:
+	case FS::ReadWrite_uint8:
 		{
-			Lua()->CheckType(3, GLua::TYPE_NUMBER);
-
-			unsigned char nData = (unsigned char)Lua()->GetInteger(3);
-
-			nWrite = FS::g_pFilesystem->Write(&nData, sizeof(unsigned char), fh);
+			LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
+			unsigned char nData = (unsigned char)LUA->GetNumber( 3 );
+			nWrite = FS::g_pFilesystem->Write( &nData, sizeof( nData ), fh );
 		}
 		break;
-	case VFS_READWRITE_DOUBLE:
+
+	case FS::ReadWrite_double:
 		{
-			Lua()->CheckType(3, GLua::TYPE_NUMBER);
-
-			double dbData = Lua()->GetDouble(3);
-
-			nWrite = FS::g_pFilesystem->Write(&dbData, sizeof(double), fh);
+			LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
+			double dbData = LUA->GetNumber( 3 );
+			nWrite = FS::g_pFilesystem->Write(&dbData, sizeof( dbData ), fh);
 		}
+
 		break;
-	case VFS_READWRITE_FLOAT:
+
+	case FS::ReadWrite_float:
 		{
-			Lua()->CheckType(3, GLua::TYPE_NUMBER);
-
-			float flData = Lua()->GetNumber(3);
-
-			nWrite = FS::g_pFilesystem->Write(&flData, sizeof(float), fh);
+			LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
+			float flData = (float)LUA->GetNumber( 3 );
+			nWrite = FS::g_pFilesystem->Write( &flData, sizeof( flData ), fh );
 		}
+
 		break;
+
 	default:
-		{
-			Lua()->Error("Unsupported write method.");
-		}
+		LUA->ThrowError( "Unsupported write method." );
 		break;
 	}
 
-	Lua()->PushLong(nWrite);
-
+	LUA->PushNumber( nWrite );
 	return 1;
 }
 
-static int Read(lua_State* L)
+static int Read( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
-	Lua()->CheckType(2, GLua::TYPE_NUMBER);
+	LUA->CheckType( 2, GarrysMod::Lua::Type::NUMBER );
 
-	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
-	
-	FileHandle_t fh = *GET_FH( );
-	unsigned int nReadType = Lua()->GetInteger(2);
+	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	FileHandle_t fh = GET_FH( );
+
+	unsigned int nReadType = (unsigned int)LUA->GetNumber( 2 );
 
 	if( !FS::g_pFilesystem )
-	{
-		Lua()->Error("Filesystem not initialized.");
-		return 0;
-	}
+		LUA->ThrowError( "Filesystem not initialized." );
 
-	if( !CheckIsValid(userdata) )
-	{
-		Lua()->Error("Invalid handle value");
-		return 0;
-	}
+	if( !CheckIsValid( userdata ) )
+		LUA->ThrowError( "Invalid handle value" );
 
 	int nRead = 0;
 
-	switch(nReadType)
+	switch( nReadType )
 	{
-	case VFS_READWRITE_STRING:
+	case FS::ReadWrite_string:
 		{
 			unsigned char cTemp;
 			std::string str;
 
-			while( !FS::g_pFilesystem->EndOfFile(fh) )
+			while( !FS::g_pFilesystem->EndOfFile( fh ) )
 			{
-				if( FS::g_pFilesystem->Read(&cTemp, 1, fh) == 0 )
+				if( FS::g_pFilesystem->Read( &cTemp, 1, fh ) == 0 )
 					break;
 
-				nRead++;
+				++nRead;
 
-				if( cTemp == 0 )
+				if( cTemp == '\0' )
 					break;
 
 				str += cTemp;
 			}
 
-			Lua()->Push(str.c_str());
+			LUA->PushString( str.c_str( ) );
 		}
-		break;
-	case VFS_READWRITE_DATA:
-		{
-			Lua()->CheckType(3, GLua::TYPE_NUMBER);
-			unsigned int len = Lua()->GetInteger(3);
-			
-			//char* data = new char[len + 1];
-			//std::string str;
-            //
-			//while( !FS::g_pFilesystem->EndOfFile(fh) )
-			//{
-			//	if( FS::g_pFilesystem->Read(&cTemp, 1, fh) == 0 )
-			//		break;
-            //
-			//	nRead++;
-            //
-			//	if( cTemp == 0 )
-			//		break;
-            //
-			//	str += cTemp;
-			//}
 
-			Lua()->Push("nope");
-		}
 		break;
-	case VFS_READWRITE_UINT32:
+
+	case FS::ReadWrite_data:
+		{
+			LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
+			unsigned int len = (unsigned int)LUA->GetNumber( 3 );
+			
+			char cTemp = '\0';
+			std::string str;
+            
+			while( (unsigned int)nRead < len && !FS::g_pFilesystem->EndOfFile( fh ) )
+			{
+				if( FS::g_pFilesystem->Read( &cTemp, 1, fh ) == 0 )
+					break;
+
+				++nRead;
+
+				if( cTemp == '\0' )
+					break;
+
+				str += cTemp;
+			}
+
+			LUA->PushString( str.c_str( ) );
+		}
+
+		break;
+
+	case FS::ReadWrite_uint32:
 		{
 			unsigned int nData = 0;
+			nRead = FS::g_pFilesystem->Read( &nData, sizeof( nData ), fh );
 
-			nRead = FS::g_pFilesystem->Read(&nData, sizeof(unsigned int), fh);
-			if( nRead == 0 )
-				Lua()->PushNil();
+			if( nRead != sizeof( nData ) )
+				LUA->PushNil();
 			else
-				Lua()->PushLong(nData);
+				LUA->PushNumber( nData );
 		}
+
 		break;
-	case VFS_READWRITE_UINT16:
+
+	case FS::ReadWrite_uint16:
 		{
 			unsigned short nData = 0;
+			nRead = FS::g_pFilesystem->Read( &nData, sizeof( nData ), fh );
 
-			nRead = FS::g_pFilesystem->Read(&nData, sizeof(unsigned short), fh);
-
-			if( nRead == 0 )
-				Lua()->PushNil();
+			if( nRead != sizeof( nData ) )
+				LUA->PushNil( );
 			else
-				Lua()->PushLong(nData);
+				LUA->PushNumber( nData );
 		}
+
 		break;
-	case VFS_READWRITE_BYTE:
-	case VFS_READWRITE_UINT8:
+
+	case FS::ReadWrite_byte:
+	case FS::ReadWrite_uint8:
 		{
 			unsigned char nData = 0;
+			nRead = FS::g_pFilesystem->Read( &nData, sizeof( nData ), fh );
 
-			nRead = FS::g_pFilesystem->Read(&nData, sizeof(unsigned char), fh);
-
-			if( nRead == 0 )
-				Lua()->PushNil();
+			if( nRead != sizeof( nData ) )
+				LUA->PushNil( );
 			else
-				Lua()->PushLong(nData);
+				LUA->PushNumber( nData );
 		}
+
 		break;
-	case VFS_READWRITE_DOUBLE:
+
+	case FS::ReadWrite_double:
 		{
 			double dbData = 0;
+			nRead = FS::g_pFilesystem->Read( &dbData, sizeof( dbData ), fh );
 
-			nRead = FS::g_pFilesystem->Read(&dbData, sizeof(double), fh);
-
-			if( nRead == 0 )
-				Lua()->PushNil();
+			if( nRead != sizeof( dbData ) )
+				LUA->PushNil( );
 			else
-				Lua()->Push((double)dbData);
+				LUA->PushNumber( dbData );
 		}
+
 		break;
-	case VFS_READWRITE_FLOAT:
+
+	case FS::ReadWrite_float:
 		{
 			float flData = 0;
+			nRead = FS::g_pFilesystem->Read( &flData, sizeof( flData ), fh );
 
-			nRead = FS::g_pFilesystem->Read(&flData, sizeof(float), fh);
-
-			if( nRead == 0 )
-				Lua()->PushNil();
+			if( nRead != sizeof( flData ) )
+				LUA->PushNil( );
 			else
-				Lua()->Push((double)flData);
+				LUA->PushNumber( flData );
 		}
+
 		break;
+
 	default:
-		{
-			Lua()->Error("Unsupported read method");
-			Lua()->PushNil();
-		}
+		LUA->ThrowError( "Unsupported read method" );
 		break;
 	}
 
 	return 1;
 }
 
-static int Seek(lua_State* L)
+static int Seek( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
-	Lua()->CheckType(2, GLua::TYPE_NUMBER);
-	Lua()->CheckType(3, GLua::TYPE_NUMBER);
+	LUA->CheckType( 2, GarrysMod::Lua::Type::NUMBER );
+	LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
 
-	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
-	
-	FileHandle_t fh = *GET_FH( );
-	int nPos = Lua()->GetInteger(2);
-	int nMethod = Lua()->GetInteger(3);
+	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	FileHandle_t fh = GET_FH( );
+
+	int nPos = (int)LUA->GetNumber( 2 );
+	int nMethod = (int)LUA->GetNumber( 3 );
 
 	if( !FS::g_pFilesystem )
-	{
-		Lua()->Error("Filesystem not initialized");
-		return 0;
-	}
+		LUA->ThrowError( "Filesystem not initialized" );
 
 	if( !CheckIsValid(userdata) )
-	{
-		Lua()->Error("Invalid handle value");
-		return 0;
-	}
+		LUA->ThrowError( "Invalid handle value" );
 
-	FS::g_pFilesystem->Seek(fh, nPos, (FileSystemSeek_t)nMethod);
+	FS::g_pFilesystem->Seek( fh, nPos, (FileSystemSeek_t)nMethod );
 
 	return 0;
 }
-static int GarbageCollect(lua_State* L)
+
+static int GarbageCollect( lua_State *state )
 {
-	if (!LUA->IsType( 1, GarrysMod::Lua::Type::USERDATA )) {
-		Warning("GC: madness\n");
+	if( !LUA->IsType( 1, GarrysMod::Lua::Type::USERDATA ) )
+	{
+		Warning( "GC: madness\n" );
 		return 0;
 	}
 
-	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
-	
-	FileHandle_t fh = *GET_FH( );
-	Warning("GC: %p %p\n",userdata,fh);
+	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	FileHandle_t fh = GET_FH( );
+
+	Warning( "GC: %p %p\n", userdata, fh );
 
 	if( !FS::g_pFilesystem )
 	{
-		Warning("GC: Filesystem not initialized\n");
+		Warning( "GC: Filesystem not initialized\n" );
 		return 0;
 	}
 
-	if( !CheckIsValid(userdata) )
+	if( !CheckIsValid( userdata ) )
 	{
-		Warning("GC: Invalid handle value\n");
+		Warning( "GC: Invalid handle value\n" );
 		return 0;
 	}
 	
 	userdata->valid = false;
-	FS::g_pFilesystem->Close(fh);
+	FS::g_pFilesystem->Close( fh );
 	
 	return 0;
 }
 
-static int Tell(lua_State* L)
+static int Tell( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
-	
-	FileHandle_t fh = *GET_FH( );
+	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	FileHandle_t fh = GET_FH( );
 
 	if( !FS::g_pFilesystem )
-	{
-		Lua()->Error("Filesystem not initialized");
-		return 0;
-	}
+		LUA->ThrowError( "Filesystem not initialized" );
 
 	if( !CheckIsValid(userdata) )
-	{
-		Lua()->Error("Invalid handle value");
-		return 0;
-	}
+		LUA->ThrowError( "Invalid handle value" );
 
-	unsigned int nPos = FS::g_pFilesystem->Tell(fh);
-	Lua()->PushLong(nPos);
-
+	LUA->PushNumber( FS::g_pFilesystem->Tell( fh ) );
 	return 1;
 }
 
-static int IsEOF(lua_State* L)
+static int IsEOF( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
-	
-	FileHandle_t fh = *GET_FH( );
+	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	FileHandle_t fh = GET_FH( );
 
 	if( !FS::g_pFilesystem )
-	{
-		Lua()->Error("Filesystem not initialized");
-		return 0;
-	}
+		LUA->ThrowError( "Filesystem not initialized" );
 
 	if( !CheckIsValid(userdata) )
-	{
-		Lua()->Error("Invalid handle value");
-		return 0;
-	}
+		LUA->ThrowError( "Invalid handle value" );
 
-	bool fEOF = FS::g_pFilesystem->EndOfFile(fh);
-	Lua()->Push(fEOF);
-
+	LUA->Push( FS::g_pFilesystem->EndOfFile( fh ) );
 	return 1;
 }
 
-static int CRC_32(lua_State* L)
+static int CRC32( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
-	
-	FileHandle_t fh = *GET_FH( );
+	VFS_UserData* userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	FileHandle_t fh = GET_FH( );
 
 	if( !FS::g_pFilesystem )
-	{
-		Lua()->Error("Filesystem not initialized");
-		return 0;
-	}
+		LUA->ThrowError("Filesystem not initialized");
 
-	if( !CheckIsValid(userdata) )
-	{
-		Lua()->Error("Invalid handle value");
-		return 0;
-	}
+	if( !CheckIsValid( userdata ) )
+		LUA->ThrowError( "Invalid handle value" );
 
 	unsigned int nCRC32 = 0xFFFFFFFF;
-	unsigned int nCurPos = FS::g_pFilesystem->Tell(fh);
+	unsigned int nCurPos = FS::g_pFilesystem->Tell( fh );
 	unsigned char szBuffer[512];
 
-	FS::g_pFilesystem->Seek(fh, 0, FILESYSTEM_SEEK_HEAD);
+	FS::g_pFilesystem->Seek( fh, 0, FILESYSTEM_SEEK_HEAD );
 
-	while( !FS::g_pFilesystem->EndOfFile(fh) )
+	while( !FS::g_pFilesystem->EndOfFile( fh ) )
 	{
-		int nRead = FS::g_pFilesystem->Read(szBuffer, 512, fh);
+		int nRead = FS::g_pFilesystem->Read( szBuffer, 512, fh );
 		if( nRead == 0 )
 			break;
 
-		nCRC32 = CRC32::CRC32Hash(nCRC32, szBuffer, nRead);
+		nCRC32 = CRC32::CRC32Hash( nCRC32, szBuffer, nRead );
 	}
+
 	nCRC32 = ~nCRC32;
 
-	FS::g_pFilesystem->Seek(fh, nCurPos, FILESYSTEM_SEEK_HEAD);
+	FS::g_pFilesystem->Seek( fh, nCurPos, FILESYSTEM_SEEK_HEAD );
 
-	Lua()->Push((double)nCRC32);
-
+	LUA->Push( (double)nCRC32 );
 	return 1;
 }
 
 }
 
-int Startup(lua_State* L)
+GMOD_MODULE_OPEN( )
 {
-	if (!FS::LoadFilesystem()) {
-		Lua()->Error("Filesystem failed to load");
-		return 0;
-	}
+	if( !FS::LoadFilesystem( ) )
+		LUA->ThrowError( "Filesystem failed to load" );
 	
-	CRC32::CRC32Init();
-	VFS::s_vecDisallowed.push_back(".cfg");
-	VFS::s_vecDisallowed.push_back(".res");
-	VFS::s_vecDisallowed.push_back(".rc");
-	VFS::s_vecDisallowed.push_back(".fgd");
-	VFS::s_vecDisallowed.push_back(".inf");
-	VFS::s_vecDisallowed.push_back(".db");
-	VFS::s_vecDisallowed.push_back(".vfs");
-	VFS::s_vecDisallowed.push_back(".dt");
-	VFS::s_vecDisallowed.push_back(".ver");
-	VFS::s_vecDisallowed.push_back(".vpk");
-	VFS::s_vecDisallowed.push_back(".sav");
-	VFS::s_vecDisallowed.push_back(".gma");
-	VFS::s_vecDisallowed.push_back(".bz2");
-	VFS::s_vecDisallowed.push_back(".zip");
-	VFS::s_vecDisallowed.push_back(".rar");
+	CRC32::CRC32Init( );
+	VFS::s_vecDisallowed.push_back( ".cfg" );
+	VFS::s_vecDisallowed.push_back( ".res" );
+	VFS::s_vecDisallowed.push_back( ".rc" );
+	VFS::s_vecDisallowed.push_back( ".fgd" );
+	VFS::s_vecDisallowed.push_back( ".inf" );
+	VFS::s_vecDisallowed.push_back( ".db" );
+	VFS::s_vecDisallowed.push_back( ".vfs" );
+	VFS::s_vecDisallowed.push_back( ".dt" );
+	VFS::s_vecDisallowed.push_back( ".ver" );
+	VFS::s_vecDisallowed.push_back( ".vpk" );
+	VFS::s_vecDisallowed.push_back( ".sav" );
+	VFS::s_vecDisallowed.push_back( ".gma" );
+	VFS::s_vecDisallowed.push_back( ".bz2" );
+	VFS::s_vecDisallowed.push_back( ".zip" );
+	VFS::s_vecDisallowed.push_back( ".rar" );
 	
-	VFS::s_vecDisallowed.push_back(".ade");
-	VFS::s_vecDisallowed.push_back(".adp");
-	VFS::s_vecDisallowed.push_back(".app");
-	VFS::s_vecDisallowed.push_back(".asp");
-	VFS::s_vecDisallowed.push_back(".bas");
-	VFS::s_vecDisallowed.push_back(".bat");
-	VFS::s_vecDisallowed.push_back(".cer");
-	VFS::s_vecDisallowed.push_back(".chm");
-	VFS::s_vecDisallowed.push_back(".cmd");
-	VFS::s_vecDisallowed.push_back(".com");
-	VFS::s_vecDisallowed.push_back(".cpl");
-	VFS::s_vecDisallowed.push_back(".crt");
-	VFS::s_vecDisallowed.push_back(".csh");
-	VFS::s_vecDisallowed.push_back(".der");
-	VFS::s_vecDisallowed.push_back(".exe");
-	VFS::s_vecDisallowed.push_back(".fxp");
-	VFS::s_vecDisallowed.push_back(".gadget");
-	VFS::s_vecDisallowed.push_back(".hlp");
-	VFS::s_vecDisallowed.push_back(".hta");
-	VFS::s_vecDisallowed.push_back(".inf");
-	VFS::s_vecDisallowed.push_back(".ins");
-	VFS::s_vecDisallowed.push_back(".isp");
-	VFS::s_vecDisallowed.push_back(".its");
-	VFS::s_vecDisallowed.push_back(".js");
-	VFS::s_vecDisallowed.push_back(".jse");
-	VFS::s_vecDisallowed.push_back(".ksh");
-	VFS::s_vecDisallowed.push_back(".lnk");
-	VFS::s_vecDisallowed.push_back(".mad");
-	VFS::s_vecDisallowed.push_back(".maf");
-	VFS::s_vecDisallowed.push_back(".mag");
-	VFS::s_vecDisallowed.push_back(".mam");
-	VFS::s_vecDisallowed.push_back(".maq");
-	VFS::s_vecDisallowed.push_back(".mar");
-	VFS::s_vecDisallowed.push_back(".mas");
-	VFS::s_vecDisallowed.push_back(".mat");
-	VFS::s_vecDisallowed.push_back(".mau");
-	VFS::s_vecDisallowed.push_back(".mav");
-	VFS::s_vecDisallowed.push_back(".maw");
-	VFS::s_vecDisallowed.push_back(".mda");
-	VFS::s_vecDisallowed.push_back(".mdb");
-	VFS::s_vecDisallowed.push_back(".mde");
-	VFS::s_vecDisallowed.push_back(".mdt");
-	VFS::s_vecDisallowed.push_back(".mdw");
-	VFS::s_vecDisallowed.push_back(".mdz");
-	VFS::s_vecDisallowed.push_back(".msc");
-	VFS::s_vecDisallowed.push_back(".msh");
-	VFS::s_vecDisallowed.push_back(".msh1");
-	VFS::s_vecDisallowed.push_back(".msh2");
-	VFS::s_vecDisallowed.push_back(".mshxml");
-	VFS::s_vecDisallowed.push_back(".msh1xml");
-	VFS::s_vecDisallowed.push_back(".msh2xml");
-	VFS::s_vecDisallowed.push_back(".msi");
-	VFS::s_vecDisallowed.push_back(".msp");
-	VFS::s_vecDisallowed.push_back(".mst");
-	VFS::s_vecDisallowed.push_back(".ops");
-	VFS::s_vecDisallowed.push_back(".pcd");
-	VFS::s_vecDisallowed.push_back(".pif");
-	VFS::s_vecDisallowed.push_back(".plg");
-	VFS::s_vecDisallowed.push_back(".prf");
-	VFS::s_vecDisallowed.push_back(".prg");
-	VFS::s_vecDisallowed.push_back(".pst");
-	VFS::s_vecDisallowed.push_back(".reg");
-	VFS::s_vecDisallowed.push_back(".scf");
-	VFS::s_vecDisallowed.push_back(".scr");
-	VFS::s_vecDisallowed.push_back(".sct");
-	VFS::s_vecDisallowed.push_back(".shb");
-	VFS::s_vecDisallowed.push_back(".shs");
-	VFS::s_vecDisallowed.push_back(".ps1");
-	VFS::s_vecDisallowed.push_back(".ps1xml");
-	VFS::s_vecDisallowed.push_back(".ps2");
-	VFS::s_vecDisallowed.push_back(".ps2xml");
-	VFS::s_vecDisallowed.push_back(".psc1");
-	VFS::s_vecDisallowed.push_back(".psc2");
-	VFS::s_vecDisallowed.push_back(".tmp");
-	VFS::s_vecDisallowed.push_back(".url");
-	VFS::s_vecDisallowed.push_back(".vb");
-	VFS::s_vecDisallowed.push_back(".vbe");
-	VFS::s_vecDisallowed.push_back(".vbs");
-	VFS::s_vecDisallowed.push_back(".vsmacros");
-	VFS::s_vecDisallowed.push_back(".vsw");
-	VFS::s_vecDisallowed.push_back(".ws");
-	VFS::s_vecDisallowed.push_back(".wsc");
-	VFS::s_vecDisallowed.push_back(".wsf");
-	VFS::s_vecDisallowed.push_back(".wsh");
-	VFS::s_vecDisallowed.push_back(".xnk");
+	VFS::s_vecDisallowed.push_back( ".ade" );
+	VFS::s_vecDisallowed.push_back( ".adp" );
+	VFS::s_vecDisallowed.push_back( ".app" );
+	VFS::s_vecDisallowed.push_back( ".asp" );
+	VFS::s_vecDisallowed.push_back( ".bas" );
+	VFS::s_vecDisallowed.push_back( ".bat" );
+	VFS::s_vecDisallowed.push_back( ".cer" );
+	VFS::s_vecDisallowed.push_back( ".chm" );
+	VFS::s_vecDisallowed.push_back( ".cmd" );
+	VFS::s_vecDisallowed.push_back( ".com" );
+	VFS::s_vecDisallowed.push_back( ".cpl" );
+	VFS::s_vecDisallowed.push_back( ".crt" );
+	VFS::s_vecDisallowed.push_back( ".csh" );
+	VFS::s_vecDisallowed.push_back( ".der" );
+	VFS::s_vecDisallowed.push_back( ".exe" );
+	VFS::s_vecDisallowed.push_back( ".fxp" );
+	VFS::s_vecDisallowed.push_back( ".gadget" );
+	VFS::s_vecDisallowed.push_back( ".hlp" );
+	VFS::s_vecDisallowed.push_back( ".hta" );
+	VFS::s_vecDisallowed.push_back( ".inf" );
+	VFS::s_vecDisallowed.push_back( ".ins" );
+	VFS::s_vecDisallowed.push_back( ".isp" );
+	VFS::s_vecDisallowed.push_back( ".its" );
+	VFS::s_vecDisallowed.push_back( ".js" );
+	VFS::s_vecDisallowed.push_back( ".jse" );
+	VFS::s_vecDisallowed.push_back( ".ksh" );
+	VFS::s_vecDisallowed.push_back( ".lnk" );
+	VFS::s_vecDisallowed.push_back( ".mad" );
+	VFS::s_vecDisallowed.push_back( ".maf" );
+	VFS::s_vecDisallowed.push_back( ".mag" );
+	VFS::s_vecDisallowed.push_back( ".mam" );
+	VFS::s_vecDisallowed.push_back( ".maq" );
+	VFS::s_vecDisallowed.push_back( ".mar" );
+	VFS::s_vecDisallowed.push_back( ".mas" );
+	VFS::s_vecDisallowed.push_back( ".mat" );
+	VFS::s_vecDisallowed.push_back( ".mau" );
+	VFS::s_vecDisallowed.push_back( ".mav" );
+	VFS::s_vecDisallowed.push_back( ".maw" );
+	VFS::s_vecDisallowed.push_back( ".mda" );
+	VFS::s_vecDisallowed.push_back( ".mdb" );
+	VFS::s_vecDisallowed.push_back( ".mde" );
+	VFS::s_vecDisallowed.push_back( ".mdt" );
+	VFS::s_vecDisallowed.push_back( ".mdw" );
+	VFS::s_vecDisallowed.push_back( ".mdz" );
+	VFS::s_vecDisallowed.push_back( ".msc" );
+	VFS::s_vecDisallowed.push_back( ".msh" );
+	VFS::s_vecDisallowed.push_back( ".msh1" );
+	VFS::s_vecDisallowed.push_back( ".msh2" );
+	VFS::s_vecDisallowed.push_back( ".mshxml" );
+	VFS::s_vecDisallowed.push_back( ".msh1xml" );
+	VFS::s_vecDisallowed.push_back( ".msh2xml" );
+	VFS::s_vecDisallowed.push_back( ".msi" );
+	VFS::s_vecDisallowed.push_back( ".msp" );
+	VFS::s_vecDisallowed.push_back( ".mst" );
+	VFS::s_vecDisallowed.push_back( ".ops" );
+	VFS::s_vecDisallowed.push_back( ".pcd" );
+	VFS::s_vecDisallowed.push_back( ".pif" );
+	VFS::s_vecDisallowed.push_back( ".plg" );
+	VFS::s_vecDisallowed.push_back( ".prf" );
+	VFS::s_vecDisallowed.push_back( ".prg" );
+	VFS::s_vecDisallowed.push_back( ".pst" );
+	VFS::s_vecDisallowed.push_back( ".reg" );
+	VFS::s_vecDisallowed.push_back( ".scf" );
+	VFS::s_vecDisallowed.push_back( ".scr" );
+	VFS::s_vecDisallowed.push_back( ".sct" );
+	VFS::s_vecDisallowed.push_back( ".shb" );
+	VFS::s_vecDisallowed.push_back( ".shs" );
+	VFS::s_vecDisallowed.push_back( ".ps1" );
+	VFS::s_vecDisallowed.push_back( ".ps1xml" );
+	VFS::s_vecDisallowed.push_back( ".ps2" );
+	VFS::s_vecDisallowed.push_back( ".ps2xml" );
+	VFS::s_vecDisallowed.push_back( ".psc1" );
+	VFS::s_vecDisallowed.push_back( ".psc2" );
+	VFS::s_vecDisallowed.push_back( ".tmp" );
+	VFS::s_vecDisallowed.push_back( ".url" );
+	VFS::s_vecDisallowed.push_back( ".vb" );
+	VFS::s_vecDisallowed.push_back( ".vbe" );
+	VFS::s_vecDisallowed.push_back( ".vbs" );
+	VFS::s_vecDisallowed.push_back( ".vsmacros" );
+	VFS::s_vecDisallowed.push_back( ".vsw" );
+	VFS::s_vecDisallowed.push_back( ".ws" );
+	VFS::s_vecDisallowed.push_back( ".wsc" );
+	VFS::s_vecDisallowed.push_back( ".wsf" );
+	VFS::s_vecDisallowed.push_back( ".wsh" );
+	VFS::s_vecDisallowed.push_back( ".xnk" );
 
-	ILuaObject* pTable = Lua()->GetNewTable();
-	{
+
+
+	LUA->PushSpecial( GarrysMod::Lua::SPECIAL_GLOB );
+
+
+
+	LUA->CreateTable( );
+
 		// vfs.Open(file, mode)
-		pTable->SetMember("Open", VFS::Open);
+		LUA->PushCFunction( VFS::Open );
+		LUA->SetField( -2, "Open" );
+
 		// vfs.Close(file)
-		pTable->SetMember("Close", VFS::Close);
-		pTable->SetMember("IsValid", VFS::IsValidFH);
-		pTable->SetMember("Flush", VFS::Flush);
+		LUA->PushCFunction( VFS::Close );
+		LUA->SetField( -2, "Close" );
+
+		LUA->PushCFunction( VFS::IsValidFH );
+		LUA->SetField( -2, "IsValid" );
+
+		LUA->PushCFunction( VFS::Flush );
+		LUA->SetField( -2, "Flush" );
+
 		// vfs.Write(handle, write_type, data)
-		pTable->SetMember("Write", VFS::Write);
+		LUA->PushCFunction( VFS::Write );
+		LUA->SetField( -2, "Write" );
+
 		// vfs.Read(handle, read_type)
-		pTable->SetMember("Read", VFS::Read);
+		LUA->PushCFunction( VFS::Read );
+		LUA->SetField( -2, "Read" );
+
 		// vfs.Seek(handle, pos, method)
-		pTable->SetMember("Seek", VFS::Seek);
+		LUA->PushCFunction( VFS::Seek );
+		LUA->SetField( -2, "Seek" );
+
 		// vfs.Tell(handle)
-		pTable->SetMember("Tell", VFS::Tell);
+		LUA->PushCFunction( VFS::Tell );
+		LUA->SetField( -2, "Tell" );
+
 		// vfs.EOF(handle)
-		pTable->SetMember("EOF", VFS::IsEOF);
+		LUA->PushCFunction( VFS::IsEOF );
+		LUA->SetField( -2, "IsEOF" );
+
 		// vfs.CRC32(handle)
-		pTable->SetMember("CRC32", VFS::CRC_32);
-	}
-	Lua()->SetGlobal("vfs", pTable);
-	pTable->UnReference();
+		LUA->PushCFunction( VFS::CRC32 );
+		LUA->SetField( -2, "CRC32" );
 
-	Lua()->SetGlobal("VFS_SEEK_SET", (float)FILESYSTEM_SEEK_HEAD);
-	Lua()->SetGlobal("VFS_SEEK_CURRENT", (float)FILESYSTEM_SEEK_CURRENT);
-	Lua()->SetGlobal("VFS_SEEK_END", (float)FILESYSTEM_SEEK_TAIL);
+	LUA->SetField( -2, "vfs" );
 
-	Lua()->SetGlobal("VFS_WRITE_DATA", (float)VFS_READWRITE_DATA);
-	Lua()->SetGlobal("VFS_WRITE_STRING", (float)VFS_READWRITE_STRING);
-	Lua()->SetGlobal("VFS_WRITE_UINT32", (float)VFS_READWRITE_UINT32);
-	Lua()->SetGlobal("VFS_WRITE_UINT16", (float)VFS_READWRITE_UINT16);
-	Lua()->SetGlobal("VFS_WRITE_UINT8", (float)VFS_READWRITE_UINT8);
-	Lua()->SetGlobal("VFS_WRITE_FLOAT", (float)VFS_READWRITE_FLOAT);
-	Lua()->SetGlobal("VFS_WRITE_DOUBLE", (float)VFS_READWRITE_DOUBLE);
-	Lua()->SetGlobal("VFS_WRITE_BYTE", (float)VFS_READWRITE_UINT8);
 
-	Lua()->SetGlobal("VFS_READ_DATA", (float)VFS_READWRITE_DATA);
-	Lua()->SetGlobal("VFS_READ_STRING", (float)VFS_READWRITE_STRING);
-	Lua()->SetGlobal("VFS_READ_UINT32", (float)VFS_READWRITE_UINT32);
-	Lua()->SetGlobal("VFS_READ_UINT16", (float)VFS_READWRITE_UINT16);
-	Lua()->SetGlobal("VFS_READ_UINT8", (float)VFS_READWRITE_UINT8);
-	Lua()->SetGlobal("VFS_READ_FLOAT", (float)VFS_READWRITE_FLOAT);
-	Lua()->SetGlobal("VFS_READ_DOUBLE", (float)VFS_READWRITE_DOUBLE);
-	Lua()->SetGlobal("VFS_READ_BYTE", (float)VFS_READWRITE_UINT8);
+
+	LUA->PushNumber( FILESYSTEM_SEEK_HEAD );
+	LUA->SetField( -2, "VFS_SEEK_SET" );
+
+	LUA->PushNumber( FILESYSTEM_SEEK_CURRENT );
+	LUA->SetField( -2, "VFS_SEEK_CURRENT" );
+
+	LUA->PushNumber( FILESYSTEM_SEEK_TAIL );
+	LUA->SetField( -2, "VFS_SEEK_END" );
+
+
+
+	LUA->PushNumber( FS::ReadWrite_data );
+	LUA->SetField( -2, "VFS_WRITE_DATA" );
+
+	LUA->PushNumber( FS::ReadWrite_string );
+	LUA->SetField( -2, "VFS_WRITE_STRING" );
+
+	LUA->PushNumber( FS::ReadWrite_uint32 );
+	LUA->SetField( -2, "VFS_WRITE_UINT32" );
+
+	LUA->PushNumber( FS::ReadWrite_uint16 );
+	LUA->SetField( -2, "VFS_WRITE_UINT16" );
+
+	LUA->PushNumber( FS::ReadWrite_uint8 );
+	LUA->SetField( -2, "VFS_WRITE_UINT8" );
+
+	LUA->PushNumber( FS::ReadWrite_float );
+	LUA->SetField( -2, "VFS_WRITE_FLOAT" );
+
+	LUA->PushNumber( FS::ReadWrite_double );
+	LUA->SetField( -2, "VFS_WRITE_DOUBLE" );
+
+	LUA->PushNumber( FS::ReadWrite_uint8 );
+	LUA->SetField( -2, "VFS_WRITE_BYTE" );
+
+
+
+	LUA->PushNumber( FS::ReadWrite_data );
+	LUA->SetField( -2, "VFS_READ_DATA" );
+
+	LUA->PushNumber( FS::ReadWrite_string );
+	LUA->SetField( -2, "VFS_READ_STRING" );
+
+	LUA->PushNumber( FS::ReadWrite_uint32 );
+	LUA->SetField( -2, "VFS_READ_UINT32" );
+
+	LUA->PushNumber( FS::ReadWrite_uint16 );
+	LUA->SetField( -2, "VFS_READ_UINT16" );
+
+	LUA->PushNumber( FS::ReadWrite_uint8 );
+	LUA->SetField( -2, "VFS_READ_UINT8" );
+
+	LUA->PushNumber( FS::ReadWrite_float );
+	LUA->SetField( -2, "VFS_READ_FLOAT" );
+
+	LUA->PushNumber( FS::ReadWrite_double );
+	LUA->SetField( -2, "VFS_READ_DOUBLE" );
+
+	LUA->PushNumber( FS::ReadWrite_uint8 );
+	LUA->SetField( -2, "VFS_READ_BYTE" );
+
+
 
 	LUA->CreateMetaTableType( "IVFS", GarrysMod::Lua::Type::USERDATA );
 
@@ -822,7 +815,7 @@ int Startup(lua_State* L)
 		LUA->PushCFunction( VFS::IsEOF );
 		LUA->SetField( -2, "EOF" );
 		
-		LUA->PushCFunction( VFS::CRC_32 );
+		LUA->PushCFunction( VFS::CRC32 );
 		LUA->SetField( -2, "CRC32" );
 		
 		LUA->Push( -1 );
@@ -830,12 +823,11 @@ int Startup(lua_State* L)
 
 	LUA->Pop( );
 
-
 	return 0;
 }
 
-int Cleanup(lua_State* L)
+GMOD_MODULE_CLOSE( )
 {
-	FS::UnloadFilesystem();
+	FS::UnloadFilesystem( );
 	return 0;
 }
