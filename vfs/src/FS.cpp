@@ -15,22 +15,18 @@ void *CreateInterface( const char *pName, int *pReturnCode )
 
 bool LoadFilesystem( )
 {
-	CreateInterfaceFn _CreateInterface = Sys_GetFactory( FILESYSTEM_STEAM_DLL );
-	
-	if( !_CreateInterface )
+		
+	CSysModule* FileSystemFactoryDLL = NULL;
+	if (Sys_LoadInterface(FILESYSTEM_STEAM_DLL, FILESYSTEM_INTERFACE_VERSION, &FileSystemFactoryDLL, (void**)&g_pFilesystem)) {
+		
+	} else {
 		return false;
-
-	int nReturnCode = 0;
-	g_pFilesystem = (IFileSystem *)_CreateInterface( FILESYSTEM_INTERFACE_VERSION, &nReturnCode );
-
+	}
 
 	if( g_pFilesystem )
 	{
-		g_pFilesystem->Connect( CreateInterface );
-
-		// TODO: Figure out if do we need to call Init?
-		// apparently it works without, so leave it alone.
-		// g_pFilesystem->Init();
+		g_pFilesystem->Connect( Sys_GetFactoryThis() );
+		//g_pFilesystem->Init();
 
 		char pszSearchPath[512] = { 0 };
 		sprintf( pszSearchPath, "garrysmod/%s", FILESYSTEM_JAIL_PATH );
@@ -43,9 +39,15 @@ bool LoadFilesystem( )
 
 bool UnloadFilesystem( )
 {
-	if( g_pFilesystem )
-		g_pFilesystem->Disconnect( );
+	if( g_pFilesystem ) {
+		// crash on reconnect???
+		//g_pFilesystem->Disconnect( );
+		char pszSearchPath[512] = { 0 };
+		sprintf( pszSearchPath, "garrysmod/%s", FILESYSTEM_JAIL_PATH );
 
+		g_pFilesystem->RemoveSearchPath( pszSearchPath, "GAME" );
+
+	}
 	return true;
 }
 

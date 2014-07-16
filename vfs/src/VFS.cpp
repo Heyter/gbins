@@ -483,7 +483,7 @@ static int GarbageCollect( lua_State *state )
 
 	if( !CheckIsValid( userdata ) )
 	{
-		Warning( "GC: Invalid handle value\n" );
+		Warning( "GC: Invalid handle value (already closed?)\n" );
 		return 0;
 	}
 	
