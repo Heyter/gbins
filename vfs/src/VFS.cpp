@@ -3,8 +3,7 @@
 #include "FS.h"
 #include "CRC.h"
 
-// GMod
-#include "GMLuaModule.h"
+#include "ILuaModuleManager.h"
 
 #include <vector>
 #include <string>
@@ -62,8 +61,14 @@ static int Open(lua_State* L)
 	char* pszPath = (char*)Lua()->GetString(1);
 	const char* pszMode = Lua()->GetString(2);
 
-	FixSlashes(pszPath);	// I know, I know, I shouldn't be writing to it..
-
+	// welp
+	char str2[255];
+	str2[0]=0;
+	strncpy( str2, pszPath, sizeof(str2) );
+	pszPath = str2;
+	
+	FixSlashes(pszPath);
+	
 	if( !FS::g_pFilesystem )
 	{
 		Lua()->Error("Filesystem not initialized");
@@ -119,7 +124,10 @@ static int Open(lua_State* L)
 		if( fh != NULL )
 		{
 			s_vecHandles.push_back(fh);
-			Lua()->PushLightUserData(fh);
+					
+			ILuaObject *metaT = Lua()->GetMetaTable( "VFST", GLua::TYPE_LIGHTUSERDATA );
+				Lua()->PushUserData( metaT, &fh );
+			metaT->UnReference();
 		}
 		else
 		{
@@ -132,9 +140,10 @@ static int Open(lua_State* L)
 
 static int Close(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_LIGHTUSERDATA);
+	Lua()->CheckType(1, GLua::TYPE_USERDATA);
 
-	FileHandle_t fh = (FileHandle_t)Lua()->GetLightUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t fh = *fhp;
 	if( !FS::g_pFilesystem )
 	{
 		Lua()->Error("Filesystem not initialized.");
@@ -163,12 +172,36 @@ static int Close(lua_State* L)
 	return 0;
 }
 
+static int Flush(lua_State* L)
+{
+	Lua()->CheckType(1, GLua::TYPE_USERDATA);
+
+	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t fh = *fhp;
+	if( !FS::g_pFilesystem )
+	{
+		Lua()->Error("Filesystem not initialized.");
+		return 0;
+	}
+
+	if( !IsValidFileHandle(fh) )
+	{
+		Lua()->Error("Invalid handle value");
+		return 0;
+	}
+
+	FS::g_pFilesystem->Flush(fh);
+	
+	return 0;
+}
+
 static int Write(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_LIGHTUSERDATA);
+	Lua()->CheckType(1, GLua::TYPE_USERDATA);
 	Lua()->CheckType(2, GLua::TYPE_NUMBER);
 
-	FileHandle_t fh = (FileHandle_t)Lua()->GetLightUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t fh = *fhp;
 	unsigned int nWriteType = Lua()->GetInteger(2);
 
 	if( !FS::g_pFilesystem )
@@ -191,10 +224,10 @@ static int Write(lua_State* L)
 		{
 			Lua()->CheckType(3, GLua::TYPE_STRING);
 			
-			const char* pData = Lua()->GetString(3);
-			unsigned int cubDataMax = Lua()->StringLength(3);
+			unsigned int cubDataMax = -1;
+			const char* pData = Lua()->GetString(3,&cubDataMax);
 			unsigned int cubData = cubDataMax;
-			unsigned int nTop = Lua()->GetStackTop();
+			unsigned int nTop = Lua()->Top();
 
 			if( nTop >= 4 )
 			{
@@ -277,10 +310,11 @@ static int Write(lua_State* L)
 
 static int Read(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_LIGHTUSERDATA);
+	Lua()->CheckType(1, GLua::TYPE_USERDATA);
 	Lua()->CheckType(2, GLua::TYPE_NUMBER);
 
-	FileHandle_t fh = (FileHandle_t)Lua()->GetLightUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t fh = *fhp;
 	unsigned int nReadType = Lua()->GetInteger(2);
 
 	if( !FS::g_pFilesystem )
@@ -365,7 +399,7 @@ static int Read(lua_State* L)
 			if( nRead == 0 )
 				Lua()->PushNil();
 			else
-				Lua()->PushDouble(dbData);
+				Lua()->Push((double)dbData);
 		}
 		break;
 	case VFS_READWRITE_FLOAT:
@@ -377,7 +411,7 @@ static int Read(lua_State* L)
 			if( nRead == 0 )
 				Lua()->PushNil();
 			else
-				Lua()->PushDouble(flData);
+				Lua()->Push((double)flData);
 		}
 		break;
 	default:
@@ -393,11 +427,12 @@ static int Read(lua_State* L)
 
 static int Seek(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_LIGHTUSERDATA);
+	Lua()->CheckType(1, GLua::TYPE_USERDATA);
 	Lua()->CheckType(2, GLua::TYPE_NUMBER);
 	Lua()->CheckType(3, GLua::TYPE_NUMBER);
 
-	FileHandle_t fh = (FileHandle_t)Lua()->GetLightUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t fh = *fhp;
 	int nPos = Lua()->GetInteger(2);
 	int nMethod = Lua()->GetInteger(3);
 
@@ -420,9 +455,10 @@ static int Seek(lua_State* L)
 
 static int Tell(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_LIGHTUSERDATA);
+	Lua()->CheckType(1, GLua::TYPE_USERDATA);
 
-	FileHandle_t fh = (FileHandle_t)Lua()->GetLightUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t fh = *fhp;
 
 	if( !FS::g_pFilesystem )
 	{
@@ -444,9 +480,10 @@ static int Tell(lua_State* L)
 
 static int IsEOF(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_LIGHTUSERDATA);
+	Lua()->CheckType(1, GLua::TYPE_USERDATA);
 
-	FileHandle_t fh = (FileHandle_t)Lua()->GetLightUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t fh = *fhp;
 
 	if( !FS::g_pFilesystem )
 	{
@@ -468,9 +505,10 @@ static int IsEOF(lua_State* L)
 
 static int CRC_32(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_LIGHTUSERDATA);
+	Lua()->CheckType(1, GLua::TYPE_USERDATA);
 
-	FileHandle_t fh = (FileHandle_t)Lua()->GetLightUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t fh = *fhp;
 
 	if( !FS::g_pFilesystem )
 	{
@@ -502,7 +540,7 @@ static int CRC_32(lua_State* L)
 
 	FS::g_pFilesystem->Seek(fh, nCurPos, FILESYSTEM_SEEK_HEAD);
 
-	Lua()->PushDouble((double)nCRC32);
+	Lua()->Push((double)nCRC32);
 
 	return 1;
 }
@@ -511,12 +549,113 @@ static int CRC_32(lua_State* L)
 
 int Startup(lua_State* L)
 {
-	FS::LoadFilesystem();
+	if (!FS::LoadFilesystem()) {
+		Lua()->Error("Filesystem failed to load");
+		return 0;
+	}
+	
 	CRC32::CRC32Init();
-
-	VFS::s_vecDisallowed.push_back(".dll");
+	VFS::s_vecDisallowed.push_back(".cfg");
+	VFS::s_vecDisallowed.push_back(".res");
+	VFS::s_vecDisallowed.push_back(".rc");
+	VFS::s_vecDisallowed.push_back(".fgd");
+	VFS::s_vecDisallowed.push_back(".inf");
+	VFS::s_vecDisallowed.push_back(".db");
+	VFS::s_vecDisallowed.push_back(".vfs");
+	VFS::s_vecDisallowed.push_back(".dt");
+	VFS::s_vecDisallowed.push_back(".ver");
+	VFS::s_vecDisallowed.push_back(".vpk");
+	VFS::s_vecDisallowed.push_back(".sav");
+	VFS::s_vecDisallowed.push_back(".gma");
+	VFS::s_vecDisallowed.push_back(".bz2");
+	VFS::s_vecDisallowed.push_back(".zip");
+	VFS::s_vecDisallowed.push_back(".rar");
+	
+	VFS::s_vecDisallowed.push_back(".ade");
+	VFS::s_vecDisallowed.push_back(".adp");
+	VFS::s_vecDisallowed.push_back(".app");
+	VFS::s_vecDisallowed.push_back(".asp");
+	VFS::s_vecDisallowed.push_back(".bas");
+	VFS::s_vecDisallowed.push_back(".bat");
+	VFS::s_vecDisallowed.push_back(".cer");
+	VFS::s_vecDisallowed.push_back(".chm");
+	VFS::s_vecDisallowed.push_back(".cmd");
+	VFS::s_vecDisallowed.push_back(".com");
+	VFS::s_vecDisallowed.push_back(".cpl");
+	VFS::s_vecDisallowed.push_back(".crt");
+	VFS::s_vecDisallowed.push_back(".csh");
+	VFS::s_vecDisallowed.push_back(".der");
 	VFS::s_vecDisallowed.push_back(".exe");
-	VFS::s_vecDisallowed.push_back(".so");
+	VFS::s_vecDisallowed.push_back(".fxp");
+	VFS::s_vecDisallowed.push_back(".gadget");
+	VFS::s_vecDisallowed.push_back(".hlp");
+	VFS::s_vecDisallowed.push_back(".hta");
+	VFS::s_vecDisallowed.push_back(".inf");
+	VFS::s_vecDisallowed.push_back(".ins");
+	VFS::s_vecDisallowed.push_back(".isp");
+	VFS::s_vecDisallowed.push_back(".its");
+	VFS::s_vecDisallowed.push_back(".js");
+	VFS::s_vecDisallowed.push_back(".jse");
+	VFS::s_vecDisallowed.push_back(".ksh");
+	VFS::s_vecDisallowed.push_back(".lnk");
+	VFS::s_vecDisallowed.push_back(".mad");
+	VFS::s_vecDisallowed.push_back(".maf");
+	VFS::s_vecDisallowed.push_back(".mag");
+	VFS::s_vecDisallowed.push_back(".mam");
+	VFS::s_vecDisallowed.push_back(".maq");
+	VFS::s_vecDisallowed.push_back(".mar");
+	VFS::s_vecDisallowed.push_back(".mas");
+	VFS::s_vecDisallowed.push_back(".mat");
+	VFS::s_vecDisallowed.push_back(".mau");
+	VFS::s_vecDisallowed.push_back(".mav");
+	VFS::s_vecDisallowed.push_back(".maw");
+	VFS::s_vecDisallowed.push_back(".mda");
+	VFS::s_vecDisallowed.push_back(".mdb");
+	VFS::s_vecDisallowed.push_back(".mde");
+	VFS::s_vecDisallowed.push_back(".mdt");
+	VFS::s_vecDisallowed.push_back(".mdw");
+	VFS::s_vecDisallowed.push_back(".mdz");
+	VFS::s_vecDisallowed.push_back(".msc");
+	VFS::s_vecDisallowed.push_back(".msh");
+	VFS::s_vecDisallowed.push_back(".msh1");
+	VFS::s_vecDisallowed.push_back(".msh2");
+	VFS::s_vecDisallowed.push_back(".mshxml");
+	VFS::s_vecDisallowed.push_back(".msh1xml");
+	VFS::s_vecDisallowed.push_back(".msh2xml");
+	VFS::s_vecDisallowed.push_back(".msi");
+	VFS::s_vecDisallowed.push_back(".msp");
+	VFS::s_vecDisallowed.push_back(".mst");
+	VFS::s_vecDisallowed.push_back(".ops");
+	VFS::s_vecDisallowed.push_back(".pcd");
+	VFS::s_vecDisallowed.push_back(".pif");
+	VFS::s_vecDisallowed.push_back(".plg");
+	VFS::s_vecDisallowed.push_back(".prf");
+	VFS::s_vecDisallowed.push_back(".prg");
+	VFS::s_vecDisallowed.push_back(".pst");
+	VFS::s_vecDisallowed.push_back(".reg");
+	VFS::s_vecDisallowed.push_back(".scf");
+	VFS::s_vecDisallowed.push_back(".scr");
+	VFS::s_vecDisallowed.push_back(".sct");
+	VFS::s_vecDisallowed.push_back(".shb");
+	VFS::s_vecDisallowed.push_back(".shs");
+	VFS::s_vecDisallowed.push_back(".ps1");
+	VFS::s_vecDisallowed.push_back(".ps1xml");
+	VFS::s_vecDisallowed.push_back(".ps2");
+	VFS::s_vecDisallowed.push_back(".ps2xml");
+	VFS::s_vecDisallowed.push_back(".psc1");
+	VFS::s_vecDisallowed.push_back(".psc2");
+	VFS::s_vecDisallowed.push_back(".tmp");
+	VFS::s_vecDisallowed.push_back(".url");
+	VFS::s_vecDisallowed.push_back(".vb");
+	VFS::s_vecDisallowed.push_back(".vbe");
+	VFS::s_vecDisallowed.push_back(".vbs");
+	VFS::s_vecDisallowed.push_back(".vsmacros");
+	VFS::s_vecDisallowed.push_back(".vsw");
+	VFS::s_vecDisallowed.push_back(".ws");
+	VFS::s_vecDisallowed.push_back(".wsc");
+	VFS::s_vecDisallowed.push_back(".wsf");
+	VFS::s_vecDisallowed.push_back(".wsh");
+	VFS::s_vecDisallowed.push_back(".xnk");
 
 	ILuaObject* pTable = Lua()->GetNewTable();
 	{
@@ -524,6 +663,7 @@ int Startup(lua_State* L)
 		pTable->SetMember("Open", VFS::Open);
 		// vfs.Close(file)
 		pTable->SetMember("Close", VFS::Close);
+		pTable->SetMember("Flush", VFS::Flush);
 		// vfs.Write(handle, write_type, data)
 		pTable->SetMember("Write", VFS::Write);
 		// vfs.Read(handle, read_type)

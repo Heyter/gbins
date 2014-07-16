@@ -14,9 +14,10 @@ SOLUTION"vfs"
 	PROJECT()
 		SOURCE_SDK_LINKS()
 		configuration 		"windows"
+			includedirs 'X:/a/boost'
 		configuration 		"linux"
 			defines		{"USE_BOOST_THREADS"}
 			removedefines	"PROTECTED_THINGS_ENABLE"
-			links	{"pthread","boost_thread"}
+			links	{"pthread"}
 			buildoptions { "-fpermissive" }
 			

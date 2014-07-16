@@ -5,12 +5,13 @@
 #pragma once
 #endif
 
-#include "SDK\filesystem.h"
+#include "filesystem.h"
 
+// what about servers???
 #if defined(WIN32)
-#define FILESYSTEM_STEAM_DLL	"filesystem_steam.dll"
+	#define FILESYSTEM_STEAM_DLL	"filesystem_stdio.dll"
 #else
-#define FILESYSTEM_STEAM_DLL	"filesystem_steam.so"
+	#define FILESYSTEM_STEAM_DLL	"filesystem_stdio.so"
 #endif
 #define FILESYSTEM_JAIL_PATH	"vfs"
 
