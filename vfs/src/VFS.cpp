@@ -12,19 +12,21 @@ GMOD_MODULE(Startup, Cleanup);
 
 namespace VFS {
 
-static std::vector<FileHandle_t> s_vecHandles;
+struct VFS_UserData
+{
+	void*			data;
+	unsigned char	type;
+	bool			valid;
+};
+
+
+#define GET_FH( ) ( (FileHandle_t *)( (VFS_UserData *)LUA->GetUserdata( 1 ) )->data )
+
 static std::vector<std::string> s_vecDisallowed;
 
-static bool IsValidFileHandle(FileHandle_t fh)
+static bool CheckIsValid(VFS_UserData* ud)
 {
-	for(std::vector<FileHandle_t>::iterator itr = s_vecHandles.begin();
-		itr != s_vecHandles.end();
-		itr++)
-	{
-		if( *itr == fh )
-			return true;
-	}
-	return false;
+	return ud->valid;
 }
 
 static bool IsExtensionDisallowed(const char* pszExt)
@@ -123,12 +125,15 @@ static int Open(lua_State* L)
 		FileHandle_t fh = FS::g_pFilesystem->Open(pszVFSPath, pszMode, "GAME");
 		if( fh != NULL )
 		{
-			s_vecHandles.push_back(fh);
 			
-			GarrysMod::Lua::UserData *userdata = (GarrysMod::Lua::UserData *)LUA->NewUserdata( sizeof( GarrysMod::Lua::UserData ) );
-				userdata->data = &fh;																									\
-				userdata->type = GarrysMod::Lua::Type::USERDATA;	
-			
+			VFS_UserData* userdata = (VFS_UserData* )LUA->NewUserdata( sizeof( VFS_UserData ) );
+				userdata->data  = &fh;																									\
+				userdata->type  = GarrysMod::Lua::Type::USERDATA;	
+				userdata->valid = true;
+				
+				FileHandle_t fh2 = *((FileHandle_t*) (userdata->data));
+				Warning("Create: %p %p==%p\n",userdata,fh,fh2);
+				
 			LUA->CreateMetaTableType( "IVFS", GarrysMod::Lua::Type::USERDATA );														\
 			LUA->SetMetaTable( -2 );
 			
@@ -147,15 +152,20 @@ static int IsValidFH(lua_State* L)
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
-	FileHandle_t fh = *fhp;
+	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
+	
+	FileHandle_t fh = *GET_FH( );
+	
+	
+	Warning("IsValidFH: %p %p\n",userdata,fh);
+	
 	if( !FS::g_pFilesystem )
 	{
 		Lua()->Error("Filesystem not initialized.");
 		return 0;
 	}
 
-	if( IsValidFileHandle(fh) )
+	if( CheckIsValid(userdata) )
 	{
 		LUA->PushBool(true);
 		return 1;
@@ -168,31 +178,24 @@ static int Close(lua_State* L)
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
-	FileHandle_t fh = *fhp;
+	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
+	
+	FileHandle_t fh = *GET_FH( );
+	Warning("Close: %p %p\n",userdata,fh);
+	
 	if( !FS::g_pFilesystem )
 	{
 		Lua()->Error("Filesystem not initialized.");
 		return 0;
 	}
 
-	if( !IsValidFileHandle(fh) )
+	if( !CheckIsValid(userdata) )
 	{
 		Lua()->Error("Invalid handle value");
 		return 0;
 	}
 
-	for(std::vector<FileHandle_t>::iterator itr = s_vecHandles.begin();
-		itr != s_vecHandles.end();
-		itr++)
-	{
-		if( *itr == fh )
-		{
-			s_vecHandles.erase(itr);
-			break;
-		}
-	}
-
+	userdata->valid = false;
 	FS::g_pFilesystem->Close(fh);
 	
 	return 0;
@@ -202,15 +205,16 @@ static int Flush(lua_State* L)
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
-	FileHandle_t fh = *fhp;
+	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
+	
+	FileHandle_t fh = *GET_FH( );
 	if( !FS::g_pFilesystem )
 	{
 		Lua()->Error("Filesystem not initialized.");
 		return 0;
 	}
 
-	if( !IsValidFileHandle(fh) )
+	if( !CheckIsValid(userdata) )
 	{
 		Lua()->Error("Invalid handle value");
 		return 0;
@@ -226,8 +230,10 @@ static int Write(lua_State* L)
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 	Lua()->CheckType(2, GLua::TYPE_NUMBER);
 
-	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
-	FileHandle_t fh = *fhp;
+	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
+	
+	FileHandle_t fh = *GET_FH( );
+	Warning("WRITE: %p %p\n",fh,userdata);
 	unsigned int nWriteType = Lua()->GetInteger(2);
 
 	if( !FS::g_pFilesystem )
@@ -236,7 +242,7 @@ static int Write(lua_State* L)
 		return 0;
 	}
 
-	if( !IsValidFileHandle(fh) )
+	if( !CheckIsValid(userdata) )
 	{
 		Lua()->Error("Invalid handle value");
 		return 0;
@@ -339,8 +345,9 @@ static int Read(lua_State* L)
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 	Lua()->CheckType(2, GLua::TYPE_NUMBER);
 
-	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
-	FileHandle_t fh = *fhp;
+	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
+	
+	FileHandle_t fh = *GET_FH( );
 	unsigned int nReadType = Lua()->GetInteger(2);
 
 	if( !FS::g_pFilesystem )
@@ -349,7 +356,7 @@ static int Read(lua_State* L)
 		return 0;
 	}
 
-	if( !IsValidFileHandle(fh) )
+	if( !CheckIsValid(userdata) )
 	{
 		Lua()->Error("Invalid handle value");
 		return 0;
@@ -481,8 +488,9 @@ static int Seek(lua_State* L)
 	Lua()->CheckType(2, GLua::TYPE_NUMBER);
 	Lua()->CheckType(3, GLua::TYPE_NUMBER);
 
-	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
-	FileHandle_t fh = *fhp;
+	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
+	
+	FileHandle_t fh = *GET_FH( );
 	int nPos = Lua()->GetInteger(2);
 	int nMethod = Lua()->GetInteger(3);
 
@@ -492,7 +500,7 @@ static int Seek(lua_State* L)
 		return 0;
 	}
 
-	if( !IsValidFileHandle(fh) )
+	if( !CheckIsValid(userdata) )
 	{
 		Lua()->Error("Invalid handle value");
 		return 0;
@@ -509,8 +517,10 @@ static int GarbageCollect(lua_State* L)
 		return 0;
 	}
 
-	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
-	FileHandle_t fh = *fhp;
+	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
+	
+	FileHandle_t fh = *GET_FH( );
+	Warning("GC: %p %p\n",userdata,fh);
 
 	if( !FS::g_pFilesystem )
 	{
@@ -518,12 +528,15 @@ static int GarbageCollect(lua_State* L)
 		return 0;
 	}
 
-	if( !IsValidFileHandle(fh) )
+	if( !CheckIsValid(userdata) )
 	{
 		Warning("GC: Invalid handle value\n");
 		return 0;
 	}
-
+	
+	userdata->valid = false;
+	FS::g_pFilesystem->Close(fh);
+	
 	return 0;
 }
 
@@ -531,8 +544,9 @@ static int Tell(lua_State* L)
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
-	FileHandle_t fh = *fhp;
+	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
+	
+	FileHandle_t fh = *GET_FH( );
 
 	if( !FS::g_pFilesystem )
 	{
@@ -540,7 +554,7 @@ static int Tell(lua_State* L)
 		return 0;
 	}
 
-	if( !IsValidFileHandle(fh) )
+	if( !CheckIsValid(userdata) )
 	{
 		Lua()->Error("Invalid handle value");
 		return 0;
@@ -556,8 +570,9 @@ static int IsEOF(lua_State* L)
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
-	FileHandle_t fh = *fhp;
+	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
+	
+	FileHandle_t fh = *GET_FH( );
 
 	if( !FS::g_pFilesystem )
 	{
@@ -565,7 +580,7 @@ static int IsEOF(lua_State* L)
 		return 0;
 	}
 
-	if( !IsValidFileHandle(fh) )
+	if( !CheckIsValid(userdata) )
 	{
 		Lua()->Error("Invalid handle value");
 		return 0;
@@ -581,8 +596,9 @@ static int CRC_32(lua_State* L)
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
-	FileHandle_t fh = *fhp;
+	VFS_UserData* userdata = (VFS_UserData*)LUA->GetUserdata( 1 );
+	
+	FileHandle_t fh = *GET_FH( );
 
 	if( !FS::g_pFilesystem )
 	{
@@ -590,7 +606,7 @@ static int CRC_32(lua_State* L)
 		return 0;
 	}
 
-	if( !IsValidFileHandle(fh) )
+	if( !CheckIsValid(userdata) )
 	{
 		Lua()->Error("Invalid handle value");
 		return 0;
@@ -820,14 +836,6 @@ int Startup(lua_State* L)
 
 int Cleanup(lua_State* L)
 {
-	for(std::vector<FileHandle_t>::iterator itr = VFS::s_vecHandles.begin();
-		itr != VFS::s_vecHandles.end();
-		itr++)
-	{
-		if( FS::g_pFilesystem )
-			FS::g_pFilesystem->Close(*itr);
-	}
-
 	FS::UnloadFilesystem();
 	return 0;
 }
