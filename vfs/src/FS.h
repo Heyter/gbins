@@ -3,7 +3,6 @@
 
 #include <filesystem.h>
 
-// what about servers???
 #if defined WIN32
 	#define FILESYSTEM_STEAM_DLL "filesystem_stdio.dll"
 #else
