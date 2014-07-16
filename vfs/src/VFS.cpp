@@ -124,11 +124,16 @@ static int Open(lua_State* L)
 		if( fh != NULL )
 		{
 			s_vecHandles.push_back(fh);
-					
-			ILuaObject *metaT = Lua()->GetMetaTable( "VFST", GLua::TYPE_LIGHTUSERDATA );
-				Lua()->PushUserData( metaT, &fh );
-			metaT->UnReference();
+			
+			GarrysMod::Lua::UserData *userdata = (GarrysMod::Lua::UserData *)LUA->NewUserdata( sizeof( GarrysMod::Lua::UserData ) );
+				userdata->data = &fh;																									\
+				userdata->type = GarrysMod::Lua::Type::USERDATA;	
+			
+			LUA->CreateMetaTableType( "IVFS", GarrysMod::Lua::Type::USERDATA );														\
+			LUA->SetMetaTable( -2 );
+			
 		}
+		
 		else
 		{
 			Lua()->PushNil();
@@ -138,11 +143,32 @@ static int Open(lua_State* L)
 	return 1;
 }
 
+static int IsValidFH(lua_State* L)
+{
+	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
+
+	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
+	FileHandle_t fh = *fhp;
+	if( !FS::g_pFilesystem )
+	{
+		Lua()->Error("Filesystem not initialized.");
+		return 0;
+	}
+
+	if( IsValidFileHandle(fh) )
+	{
+		LUA->PushBool(true);
+		return 1;
+	}
+	
+	return 0;
+}
+
 static int Close(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_USERDATA);
+	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
 	FileHandle_t fh = *fhp;
 	if( !FS::g_pFilesystem )
 	{
@@ -174,9 +200,9 @@ static int Close(lua_State* L)
 
 static int Flush(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_USERDATA);
+	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
 	FileHandle_t fh = *fhp;
 	if( !FS::g_pFilesystem )
 	{
@@ -197,10 +223,10 @@ static int Flush(lua_State* L)
 
 static int Write(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_USERDATA);
+	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 	Lua()->CheckType(2, GLua::TYPE_NUMBER);
 
-	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
 	FileHandle_t fh = *fhp;
 	unsigned int nWriteType = Lua()->GetInteger(2);
 
@@ -310,10 +336,10 @@ static int Write(lua_State* L)
 
 static int Read(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_USERDATA);
+	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 	Lua()->CheckType(2, GLua::TYPE_NUMBER);
 
-	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
 	FileHandle_t fh = *fhp;
 	unsigned int nReadType = Lua()->GetInteger(2);
 
@@ -352,6 +378,30 @@ static int Read(lua_State* L)
 			}
 
 			Lua()->Push(str.c_str());
+		}
+		break;
+	case VFS_READWRITE_DATA:
+		{
+			Lua()->CheckType(3, GLua::TYPE_NUMBER);
+			unsigned int len = Lua()->GetInteger(3);
+			
+			//char* data = new char[len + 1];
+			//std::string str;
+            //
+			//while( !FS::g_pFilesystem->EndOfFile(fh) )
+			//{
+			//	if( FS::g_pFilesystem->Read(&cTemp, 1, fh) == 0 )
+			//		break;
+            //
+			//	nRead++;
+            //
+			//	if( cTemp == 0 )
+			//		break;
+            //
+			//	str += cTemp;
+			//}
+
+			Lua()->Push("nope");
 		}
 		break;
 	case VFS_READWRITE_UINT32:
@@ -427,11 +477,11 @@ static int Read(lua_State* L)
 
 static int Seek(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_USERDATA);
+	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 	Lua()->CheckType(2, GLua::TYPE_NUMBER);
 	Lua()->CheckType(3, GLua::TYPE_NUMBER);
 
-	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
 	FileHandle_t fh = *fhp;
 	int nPos = Lua()->GetInteger(2);
 	int nMethod = Lua()->GetInteger(3);
@@ -452,12 +502,36 @@ static int Seek(lua_State* L)
 
 	return 0;
 }
+static int GarbageCollect(lua_State* L)
+{
+	if (!LUA->IsType( 1, GarrysMod::Lua::Type::USERDATA )) {
+		Warning("GC: madness\n");
+		return 0;
+	}
+
+	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
+	FileHandle_t fh = *fhp;
+
+	if( !FS::g_pFilesystem )
+	{
+		Warning("GC: Filesystem not initialized\n");
+		return 0;
+	}
+
+	if( !IsValidFileHandle(fh) )
+	{
+		Warning("GC: Invalid handle value\n");
+		return 0;
+	}
+
+	return 0;
+}
 
 static int Tell(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_USERDATA);
+	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
 	FileHandle_t fh = *fhp;
 
 	if( !FS::g_pFilesystem )
@@ -480,9 +554,9 @@ static int Tell(lua_State* L)
 
 static int IsEOF(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_USERDATA);
+	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
 	FileHandle_t fh = *fhp;
 
 	if( !FS::g_pFilesystem )
@@ -505,9 +579,9 @@ static int IsEOF(lua_State* L)
 
 static int CRC_32(lua_State* L)
 {
-	Lua()->CheckType(1, GLua::TYPE_USERDATA);
+	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	FileHandle_t* fhp = (FileHandle_t *)Lua()->GetUserData(1);
+	FileHandle_t* fhp = (FileHandle_t *)( (GarrysMod::Lua::UserData *)LUA->GetUserdata( 1 ) )->data;
 	FileHandle_t fh = *fhp;
 
 	if( !FS::g_pFilesystem )
@@ -663,6 +737,7 @@ int Startup(lua_State* L)
 		pTable->SetMember("Open", VFS::Open);
 		// vfs.Close(file)
 		pTable->SetMember("Close", VFS::Close);
+		pTable->SetMember("IsValid", VFS::IsValidFH);
 		pTable->SetMember("Flush", VFS::Flush);
 		// vfs.Write(handle, write_type, data)
 		pTable->SetMember("Write", VFS::Write);
@@ -693,6 +768,7 @@ int Startup(lua_State* L)
 	Lua()->SetGlobal("VFS_WRITE_DOUBLE", (float)VFS_READWRITE_DOUBLE);
 	Lua()->SetGlobal("VFS_WRITE_BYTE", (float)VFS_READWRITE_UINT8);
 
+	Lua()->SetGlobal("VFS_READ_DATA", (float)VFS_READWRITE_DATA);
 	Lua()->SetGlobal("VFS_READ_STRING", (float)VFS_READWRITE_STRING);
 	Lua()->SetGlobal("VFS_READ_UINT32", (float)VFS_READWRITE_UINT32);
 	Lua()->SetGlobal("VFS_READ_UINT16", (float)VFS_READWRITE_UINT16);
@@ -700,6 +776,44 @@ int Startup(lua_State* L)
 	Lua()->SetGlobal("VFS_READ_FLOAT", (float)VFS_READWRITE_FLOAT);
 	Lua()->SetGlobal("VFS_READ_DOUBLE", (float)VFS_READWRITE_DOUBLE);
 	Lua()->SetGlobal("VFS_READ_BYTE", (float)VFS_READWRITE_UINT8);
+
+	LUA->CreateMetaTableType( "IVFS", GarrysMod::Lua::Type::USERDATA );
+
+		LUA->PushCFunction( VFS::GarbageCollect );
+		LUA->SetField( -2, "__gc" );
+		
+		LUA->PushCFunction( VFS::Close );
+		LUA->SetField( -2, "Close" );
+		
+		LUA->PushCFunction( VFS::IsValidFH );
+		LUA->SetField( -2, "IsValid" );
+		
+		LUA->PushCFunction( VFS::Flush );
+		LUA->SetField( -2, "Flush" );
+		
+		LUA->PushCFunction( VFS::Write );
+		LUA->SetField( -2, "Write" );
+		
+		LUA->PushCFunction( VFS::Read );
+		LUA->SetField( -2, "Read" );
+		
+		LUA->PushCFunction( VFS::Seek );
+		LUA->SetField( -2, "Seek" );
+		
+		LUA->PushCFunction( VFS::Tell );
+		LUA->SetField( -2, "Tell" );
+		
+		LUA->PushCFunction( VFS::IsEOF );
+		LUA->SetField( -2, "EOF" );
+		
+		LUA->PushCFunction( VFS::CRC_32 );
+		LUA->SetField( -2, "CRC32" );
+		
+		LUA->Push( -1 );
+		LUA->SetField( -2, "__index" );
+
+	LUA->Pop( );
+
 
 	return 0;
 }
