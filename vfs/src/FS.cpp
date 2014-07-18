@@ -8,33 +8,28 @@ IFileSystem *g_pFilesystem = NULL;
 bool LoadFilesystem( )
 {
 	CreateInterfaceFn fsinterface = Sys_GetFactory( FILESYSTEM_STEAM_DLL );
-    
 	if( !fsinterface )
 		return false;
 
-	int nReturnCode = 0;
-	g_pFilesystem = (IFileSystem *)fsinterface( FILESYSTEM_INTERFACE_VERSION, &nReturnCode );
-
-	if( g_pFilesystem )
+	g_pFilesystem = (IFileSystem *)fsinterface( FILESYSTEM_INTERFACE_VERSION, NULL );
+	if( g_pFilesystem != NULL )
 	{
-		char pszSearchPath[512] = { 0 };
-		sprintf( pszSearchPath, "garrysmod/%s", FILESYSTEM_JAIL_PATH );
-		g_pFilesystem->AddSearchPath( pszSearchPath, "GAME" );
+		g_pFilesystem->AddSearchPath( "garrysmod/" FILESYSTEM_JAIL_PATH, "GAME" );
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
 bool UnloadFilesystem( )
 {
-	if( g_pFilesystem )
+	if( g_pFilesystem != NULL )
 	{
-		char pszSearchPath[512] = { 0 };
-		sprintf( pszSearchPath, "garrysmod/%s", FILESYSTEM_JAIL_PATH );
-		g_pFilesystem->RemoveSearchPath( pszSearchPath, "GAME" );
+		g_pFilesystem->RemoveSearchPath( "garrysmod/" FILESYSTEM_JAIL_PATH, "GAME" );
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
 }

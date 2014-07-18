@@ -4,8 +4,6 @@
 namespace CRC32
 {
 
-unsigned int CRC32Table( unsigned int nPolynomial, unsigned int CRCTable[256] );
-
 unsigned int CRC32Hash( unsigned int nSeed, const unsigned char *pData, unsigned int cubData );
 
 void CRC32Init( );

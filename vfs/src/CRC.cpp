@@ -6,7 +6,7 @@ namespace CRC32
 static unsigned int s_DefaultCRCTable[256];
 static unsigned int s_DefaultCRCPoly = 0xEDB88320;
 
-unsigned int CRC32Table( unsigned int nPolynomial, unsigned int *pCRCTable )
+static unsigned int CRC32Table( unsigned int nPolynomial, unsigned int *pCRCTable )
 {
 	register unsigned int CRC = 0;
 	register unsigned int i = 0;

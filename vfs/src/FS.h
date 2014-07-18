@@ -3,7 +3,7 @@
 
 #include <filesystem.h>
 
-#if defined WIN32
+#if defined _WIN32
 	#define FILESYSTEM_STEAM_DLL "filesystem_stdio.dll"
 #else
 	#define FILESYSTEM_STEAM_DLL "filesystem_stdio.so"
@@ -15,14 +15,14 @@ namespace FS
 {
 	enum ReadWrite
 	{
-		ReadWrite_data,
-		ReadWrite_string,
-		ReadWrite_uint32,
-		ReadWrite_uint16,
-		ReadWrite_uint8,
-		ReadWrite_float,
-		ReadWrite_double,
-		ReadWrite_byte
+		data,
+		string,
+		uint32,
+		uint16,
+		uint8,
+		fp,
+		doublefp,
+		byte
 	};
 
 	bool LoadFilesystem( );

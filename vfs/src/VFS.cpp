@@ -11,18 +11,18 @@
 namespace VFS
 {
 
-struct VFS_UserData
+struct UserData
 {
 	FileHandle_t data;
 	unsigned char type;
 	bool valid;
 };
 
-#define GET_FH( ) ( ( (VFS_UserData *)LUA->GetUserdata( 1 ) )->data )
+#define GET_FH( ) ( ( (UserData *)LUA->GetUserdata( 1 ) )->data )
 
 static std::vector<std::string> s_vecDisallowed;
 
-static bool CheckIsValid( VFS_UserData *ud )
+static bool CheckIsValid( UserData *ud )
 {
 	return ud->valid;
 }
@@ -39,97 +39,72 @@ static bool IsExtensionDisallowed( const char *pszExt )
 	return false;
 }
 
-static void FixSlashes( char *pszPath )
-{
-	while( *pszPath )
-	{
-		if( *pszPath == '\\' )
-			*pszPath = '/';
-
-		++pszPath;
-	}
-}
-
 static int Open( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::STRING );
 	LUA->CheckType( 2, GarrysMod::Lua::Type::STRING );
 
-	char *pszPath = (char *)LUA->GetString( 1 );
+	unsigned int len = 0;
+	const char *pszPath = LUA->GetString( 1, &len );
 	const char *pszMode = LUA->GetString( 2 );
-
-	// welp
-	char str2[255];
-	str2[0] = 0;
-	strncpy( str2, pszPath, sizeof( str2 ) );
-	pszPath = str2;
-	
-	FixSlashes( pszPath );
 	
 	if( !FS::g_pFilesystem )
 		LUA->ThrowError( "Filesystem not initialized" );
 
+	std::string strPath = pszPath;
+	size_t pos = -1;
+	while( ( pos = strPath.find( '\\', pos + 1 ) ) != strPath.npos )
+		strPath.replace( pos, pos, 1, '/' );
+
 	// Path validation.
-#if defined WIN32
-	if( pszPath[1] == ':' )
+#if defined _WIN32
+	if( strPath[1] == ':' )
 	{
 		Msg( "Invalid Path ( Absolute path not allowed )" );
 		LUA->PushNil( );
+		return 1;
 	}
 #else
-	if( pszPath[1] == "/" )
+	if( strPath[0] == "/" )
 	{
 		Msg( "Invalid Path ( Absolute path not allowed )" );
-		LUA->PushNil();
+		LUA->PushNil( );
+		return 1;
 	}
 #endif
-	else if( strstr( pszPath, "../" ) != NULL )
+
+	if( strPath.find( "../" ) != strPath.npos )
 	{
 		Msg( "Invalid Path ( You can not leave the directory )" );
 		LUA->PushNil( );
+		return 1;
 	}
-	else if( IsExtensionDisallowed( strrchr( pszPath, '.' ) ) )
+
+	pos = strPath.rfind( '.' );
+	if( pos != strPath.npos && IsExtensionDisallowed( &strPath[pos] ) )
 	{
 		Msg( "Extension disallowed");
 		LUA->PushNil( );
+		return 1;
+	}
+
+	strPath.insert( 0, FILESYSTEM_JAIL_PATH "/" );
+	FS::g_pFilesystem->CreateDirHierarchy( strPath.c_str( ), "GAME" );
+
+	FileHandle_t fh = FS::g_pFilesystem->Open( strPath.c_str( ), pszMode, "GAME" );
+	if( fh != NULL )
+	{
+		UserData *userdata = (UserData *)LUA->NewUserdata( sizeof( UserData ) );
+		userdata->data = fh;
+		userdata->type = GarrysMod::Lua::Type::USERDATA;	
+		userdata->valid = true;
+
+		LUA->CreateMetaTableType( "IVFS", GarrysMod::Lua::Type::USERDATA );
+		LUA->SetMetaTable( -2 );
 	}
 	else
 	{
-		char pszVFSPath[1024] = { 0 };
-		sprintf( pszVFSPath, "%s/%s", FILESYSTEM_JAIL_PATH, pszPath );
-
-		char *pszDir = pszVFSPath;
-
-		while( *pszDir )
-		{
-			if( *pszDir == '/' )
-			{
-				char cTemp = *pszDir;
-				*pszDir = '\0';
-
-				FS::g_pFilesystem->CreateDirHierarchy( pszVFSPath, "GAME" );
-
-				*pszDir = cTemp;
-			}
-
-			++pszDir;
-		}
-
-		FileHandle_t fh = FS::g_pFilesystem->Open( pszVFSPath, pszMode, "GAME" );
-		if( fh != NULL )
-		{
-			VFS_UserData *userdata = (VFS_UserData *)LUA->NewUserdata( sizeof( VFS_UserData ) );
-			userdata->data = fh;
-			userdata->type = GarrysMod::Lua::Type::USERDATA;	
-			userdata->valid = true;
-
-			LUA->CreateMetaTableType( "IVFS", GarrysMod::Lua::Type::USERDATA );
-			LUA->SetMetaTable( -2 );
-		}
-		else
-		{
-			LUA->PushNil( );
-		}
+		LUA->PushNil( );
 	}
 
 	return 1;
@@ -139,7 +114,7 @@ static int IsValidFH( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	UserData *userdata = (UserData *)LUA->GetUserdata( 1 );
 	
 	if( !FS::g_pFilesystem )
 		LUA->ThrowError("Filesystem not initialized.");
@@ -157,7 +132,7 @@ static int Close( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	UserData *userdata = (UserData *)LUA->GetUserdata( 1 );
 	FileHandle_t fh = GET_FH( );
 	
 	if( !FS::g_pFilesystem )
@@ -176,7 +151,7 @@ static int Flush( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	UserData *userdata = (UserData *)LUA->GetUserdata( 1 );
 	FileHandle_t fh = GET_FH( );
 
 	if( !FS::g_pFilesystem )
@@ -195,10 +170,8 @@ static int Write( lua_State *state )
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 	LUA->CheckType( 2, GarrysMod::Lua::Type::NUMBER );
 
-	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	UserData *userdata = (UserData *)LUA->GetUserdata( 1 );
 	FileHandle_t fh = GET_FH( );
-
-	unsigned int nWriteType = (unsigned int)LUA->GetNumber( 2 );
 
 	if( !FS::g_pFilesystem )
 		LUA->ThrowError( "Filesystem not initialized." );
@@ -207,19 +180,17 @@ static int Write( lua_State *state )
 		LUA->ThrowError( "Invalid handle value" );
 
 	int nWrite = 0;
-
-	switch( nWriteType )
+	switch( (FS::ReadWrite)( (int)LUA->GetNumber( 2 ) ) )
 	{
-	case FS::ReadWrite_data:
+		case FS::ReadWrite::data:
 		{
 			LUA->CheckType( 3, GarrysMod::Lua::Type::STRING );
 			
 			unsigned int cubDataMax = 0;
 			const char *pData = LUA->GetString( 3, &cubDataMax );
 			unsigned int cubData = cubDataMax;
-			unsigned int nTop = LUA->Top( );
 
-			if( nTop >= 4 )
+			if( LUA->Top( ) >= 4 )
 			{
 				LUA->CheckType( 4, GarrysMod::Lua::Type::NUMBER );
 				cubData = (unsigned int)LUA->GetNumber( 4 );
@@ -229,67 +200,61 @@ static int Write( lua_State *state )
 				cubData = cubDataMax;
 
 			nWrite = FS::g_pFilesystem->Write( pData, cubData, fh );
+			break;
 		}
 
-		break;
-
-	case FS::ReadWrite_string:
+		case FS::ReadWrite::string:
 		{
 			LUA->CheckType( 3, GarrysMod::Lua::Type::STRING );
 			const char *pData = LUA->GetString( 3 );
 			nWrite = FS::g_pFilesystem->Write( pData, strlen( pData ) + 1, fh );
+			break;
 		}
 
-		break;
-
-	case FS::ReadWrite_uint32:
+		case FS::ReadWrite::uint32:
 		{
 			LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
 			unsigned int nData = (unsigned int)LUA->GetNumber( 3 );
 			nWrite = FS::g_pFilesystem->Write( &nData, sizeof( nData ), fh );
+			break;
 		}
 
-		break;
-
-	case FS::ReadWrite_uint16:
+		case FS::ReadWrite::uint16:
 		{
 			LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
 			unsigned short nData = (unsigned short)LUA->GetNumber( 3 );
 			nWrite = FS::g_pFilesystem->Write( &nData, sizeof( nData ), fh );
+			break;
 		}
 
-		break;
-
-	case FS::ReadWrite_byte:
-	case FS::ReadWrite_uint8:
+		case FS::ReadWrite::byte:
+		case FS::ReadWrite::uint8:
 		{
 			LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
 			unsigned char nData = (unsigned char)LUA->GetNumber( 3 );
 			nWrite = FS::g_pFilesystem->Write( &nData, sizeof( nData ), fh );
+			break;
 		}
-		break;
 
-	case FS::ReadWrite_double:
+		case FS::ReadWrite::doublefp:
 		{
 			LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
 			double dbData = LUA->GetNumber( 3 );
-			nWrite = FS::g_pFilesystem->Write(&dbData, sizeof( dbData ), fh);
+			nWrite = FS::g_pFilesystem->Write( &dbData, sizeof( dbData ), fh );
+			break;
 		}
 
-		break;
-
-	case FS::ReadWrite_float:
+		case FS::ReadWrite::fp:
 		{
 			LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
 			float flData = (float)LUA->GetNumber( 3 );
 			nWrite = FS::g_pFilesystem->Write( &flData, sizeof( flData ), fh );
+			break;
 		}
 
-		break;
-
-	default:
-		LUA->ThrowError( "Unsupported write method." );
-		break;
+		default:
+			LUA->ThrowError( "Unsupported write method." );
+			break;
 	}
 
 	LUA->PushNumber( nWrite );
@@ -301,10 +266,8 @@ static int Read( lua_State *state )
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 	LUA->CheckType( 2, GarrysMod::Lua::Type::NUMBER );
 
-	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	UserData *userdata = (UserData *)LUA->GetUserdata( 1 );
 	FileHandle_t fh = GET_FH( );
-
-	unsigned int nReadType = (unsigned int)LUA->GetNumber( 2 );
 
 	if( !FS::g_pFilesystem )
 		LUA->ThrowError( "Filesystem not initialized." );
@@ -312,22 +275,15 @@ static int Read( lua_State *state )
 	if( !CheckIsValid( userdata ) )
 		LUA->ThrowError( "Invalid handle value" );
 
-	int nRead = 0;
-
-	switch( nReadType )
+	switch( (FS::ReadWrite)( (int)LUA->GetNumber( 2 ) ) )
 	{
-	case FS::ReadWrite_string:
+		case FS::ReadWrite::string:
 		{
-			unsigned char cTemp;
 			std::string str;
 
-			while( !FS::g_pFilesystem->EndOfFile( fh ) )
+			unsigned char cTemp = '\0';
+			while( FS::g_pFilesystem->Read( &cTemp, sizeof( cTemp ), fh ) == sizeof( cTemp ) )
 			{
-				if( FS::g_pFilesystem->Read( &cTemp, 1, fh ) == 0 )
-					break;
-
-				++nRead;
-
 				if( cTemp == '\0' )
 					break;
 
@@ -335,105 +291,80 @@ static int Read( lua_State *state )
 			}
 
 			LUA->PushString( str.c_str( ) );
+			break;
 		}
 
-		break;
-
-	case FS::ReadWrite_data:
+		case FS::ReadWrite::data:
 		{
 			LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
 			unsigned int len = (unsigned int)LUA->GetNumber( 3 );
-			
-			char cTemp = '\0';
-			std::string str;
-            
-			while( (unsigned int)nRead < len && !FS::g_pFilesystem->EndOfFile( fh ) )
-			{
-				if( FS::g_pFilesystem->Read( &cTemp, 1, fh ) == 0 )
-					break;
 
-				++nRead;
+			std::string str( len, '\0' );
+			int nRead = FS::g_pFilesystem->Read( &str[0], len, fh );
+			LUA->PushString( str.c_str( ), nRead );
 
-				if( cTemp == '\0' )
-					break;
-
-				str += cTemp;
-			}
-
-			LUA->PushString( str.c_str( ) );
+			break;
 		}
 
-		break;
-
-	case FS::ReadWrite_uint32:
+		case FS::ReadWrite::uint32:
 		{
 			unsigned int nData = 0;
-			nRead = FS::g_pFilesystem->Read( &nData, sizeof( nData ), fh );
-
-			if( nRead != sizeof( nData ) )
+			if( FS::g_pFilesystem->Read( &nData, sizeof( nData ), fh ) != sizeof( nData ) )
 				LUA->PushNil();
 			else
 				LUA->PushNumber( nData );
+
+			break;
 		}
 
-		break;
-
-	case FS::ReadWrite_uint16:
+		case FS::ReadWrite::uint16:
 		{
 			unsigned short nData = 0;
-			nRead = FS::g_pFilesystem->Read( &nData, sizeof( nData ), fh );
-
-			if( nRead != sizeof( nData ) )
+			if( FS::g_pFilesystem->Read( &nData, sizeof( nData ), fh ) != sizeof( nData ) )
 				LUA->PushNil( );
 			else
 				LUA->PushNumber( nData );
+
+			break;
 		}
 
-		break;
-
-	case FS::ReadWrite_byte:
-	case FS::ReadWrite_uint8:
+		case FS::ReadWrite::byte:
+		case FS::ReadWrite::uint8:
 		{
 			unsigned char nData = 0;
-			nRead = FS::g_pFilesystem->Read( &nData, sizeof( nData ), fh );
-
-			if( nRead != sizeof( nData ) )
+			if( FS::g_pFilesystem->Read( &nData, sizeof( nData ), fh ) != sizeof( nData ) )
 				LUA->PushNil( );
 			else
 				LUA->PushNumber( nData );
+
+			break;
 		}
 
-		break;
-
-	case FS::ReadWrite_double:
+		case FS::ReadWrite::doublefp:
 		{
 			double dbData = 0;
-			nRead = FS::g_pFilesystem->Read( &dbData, sizeof( dbData ), fh );
-
-			if( nRead != sizeof( dbData ) )
+			if( FS::g_pFilesystem->Read( &dbData, sizeof( dbData ), fh ) != sizeof( dbData ) )
 				LUA->PushNil( );
 			else
 				LUA->PushNumber( dbData );
+
+			break;
 		}
 
-		break;
-
-	case FS::ReadWrite_float:
+		case FS::ReadWrite::fp:
 		{
 			float flData = 0;
-			nRead = FS::g_pFilesystem->Read( &flData, sizeof( flData ), fh );
-
-			if( nRead != sizeof( flData ) )
+			if( FS::g_pFilesystem->Read( &flData, sizeof( flData ), fh ) != sizeof( flData ) )
 				LUA->PushNil( );
 			else
 				LUA->PushNumber( flData );
+
+			break;
 		}
 
-		break;
-
-	default:
-		LUA->ThrowError( "Unsupported read method" );
-		break;
+		default:
+			LUA->ThrowError( "Unsupported read method" );
+			break;
 	}
 
 	return 1;
@@ -445,7 +376,7 @@ static int Seek( lua_State *state )
 	LUA->CheckType( 2, GarrysMod::Lua::Type::NUMBER );
 	LUA->CheckType( 3, GarrysMod::Lua::Type::NUMBER );
 
-	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	UserData *userdata = (UserData *)LUA->GetUserdata( 1 );
 	FileHandle_t fh = GET_FH( );
 
 	int nPos = (int)LUA->GetNumber( 2 );
@@ -454,7 +385,7 @@ static int Seek( lua_State *state )
 	if( !FS::g_pFilesystem )
 		LUA->ThrowError( "Filesystem not initialized" );
 
-	if( !CheckIsValid(userdata) )
+	if( !CheckIsValid( userdata ) )
 		LUA->ThrowError( "Invalid handle value" );
 
 	FS::g_pFilesystem->Seek( fh, nPos, (FileSystemSeek_t)nMethod );
@@ -470,7 +401,7 @@ static int GarbageCollect( lua_State *state )
 		return 0;
 	}
 
-	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	UserData *userdata = (UserData *)LUA->GetUserdata( 1 );
 	FileHandle_t fh = GET_FH( );
 
 	Warning( "GC: %p %p\n", userdata, fh );
@@ -497,13 +428,13 @@ static int Tell( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	UserData *userdata = (UserData *)LUA->GetUserdata( 1 );
 	FileHandle_t fh = GET_FH( );
 
 	if( !FS::g_pFilesystem )
 		LUA->ThrowError( "Filesystem not initialized" );
 
-	if( !CheckIsValid(userdata) )
+	if( !CheckIsValid( userdata ) )
 		LUA->ThrowError( "Invalid handle value" );
 
 	LUA->PushNumber( FS::g_pFilesystem->Tell( fh ) );
@@ -514,13 +445,13 @@ static int IsEOF( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	VFS_UserData *userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	UserData *userdata = (UserData *)LUA->GetUserdata( 1 );
 	FileHandle_t fh = GET_FH( );
 
 	if( !FS::g_pFilesystem )
 		LUA->ThrowError( "Filesystem not initialized" );
 
-	if( !CheckIsValid(userdata) )
+	if( !CheckIsValid( userdata ) )
 		LUA->ThrowError( "Invalid handle value" );
 
 	LUA->Push( FS::g_pFilesystem->EndOfFile( fh ) );
@@ -531,11 +462,11 @@ static int CRC32( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
 
-	VFS_UserData* userdata = (VFS_UserData *)LUA->GetUserdata( 1 );
+	UserData *userdata = (UserData *)LUA->GetUserdata( 1 );
 	FileHandle_t fh = GET_FH( );
 
 	if( !FS::g_pFilesystem )
-		LUA->ThrowError("Filesystem not initialized");
+		LUA->ThrowError( "Filesystem not initialized" );
 
 	if( !CheckIsValid( userdata ) )
 		LUA->ThrowError( "Invalid handle value" );
@@ -546,20 +477,18 @@ static int CRC32( lua_State *state )
 
 	FS::g_pFilesystem->Seek( fh, 0, FILESYSTEM_SEEK_HEAD );
 
+	int nRead = 0;
 	while( !FS::g_pFilesystem->EndOfFile( fh ) )
 	{
-		int nRead = FS::g_pFilesystem->Read( szBuffer, 512, fh );
-		if( nRead == 0 )
+		if( ( nRead = FS::g_pFilesystem->Read( szBuffer, 512, fh ) ) <= 0 )
 			break;
 
 		nCRC32 = CRC32::CRC32Hash( nCRC32, szBuffer, nRead );
 	}
 
-	nCRC32 = ~nCRC32;
-
 	FS::g_pFilesystem->Seek( fh, nCurPos, FILESYSTEM_SEEK_HEAD );
 
-	LUA->Push( (double)nCRC32 );
+	LUA->Push( (double)~nCRC32 );
 	return 1;
 }
 
@@ -571,6 +500,7 @@ GMOD_MODULE_OPEN( )
 		LUA->ThrowError( "Filesystem failed to load" );
 	
 	CRC32::CRC32Init( );
+
 	VFS::s_vecDisallowed.push_back( ".cfg" );
 	VFS::s_vecDisallowed.push_back( ".res" );
 	VFS::s_vecDisallowed.push_back( ".rc" );
@@ -685,13 +615,15 @@ GMOD_MODULE_OPEN( )
 		LUA->PushCFunction( VFS::Open );
 		LUA->SetField( -2, "Open" );
 
-		// vfs.Close(file)
+		// vfs.Close(handle)
 		LUA->PushCFunction( VFS::Close );
 		LUA->SetField( -2, "Close" );
 
+		// vfs.IsValid(handle)
 		LUA->PushCFunction( VFS::IsValidFH );
 		LUA->SetField( -2, "IsValid" );
 
+		// vfs.Flush(handle)
 		LUA->PushCFunction( VFS::Flush );
 		LUA->SetField( -2, "Flush" );
 
@@ -734,54 +666,54 @@ GMOD_MODULE_OPEN( )
 
 
 
-	LUA->PushNumber( FS::ReadWrite_data );
+	LUA->PushNumber( (double)FS::ReadWrite::data );
 	LUA->SetField( -2, "VFS_WRITE_DATA" );
 
-	LUA->PushNumber( FS::ReadWrite_string );
+	LUA->PushNumber( (double)FS::ReadWrite::string );
 	LUA->SetField( -2, "VFS_WRITE_STRING" );
 
-	LUA->PushNumber( FS::ReadWrite_uint32 );
+	LUA->PushNumber( (double)FS::ReadWrite::uint32 );
 	LUA->SetField( -2, "VFS_WRITE_UINT32" );
 
-	LUA->PushNumber( FS::ReadWrite_uint16 );
+	LUA->PushNumber( (double)FS::ReadWrite::uint16 );
 	LUA->SetField( -2, "VFS_WRITE_UINT16" );
 
-	LUA->PushNumber( FS::ReadWrite_uint8 );
+	LUA->PushNumber( (double)FS::ReadWrite::uint8 );
 	LUA->SetField( -2, "VFS_WRITE_UINT8" );
 
-	LUA->PushNumber( FS::ReadWrite_float );
+	LUA->PushNumber( (double)FS::ReadWrite::fp );
 	LUA->SetField( -2, "VFS_WRITE_FLOAT" );
 
-	LUA->PushNumber( FS::ReadWrite_double );
+	LUA->PushNumber( (double)FS::ReadWrite::doublefp );
 	LUA->SetField( -2, "VFS_WRITE_DOUBLE" );
 
-	LUA->PushNumber( FS::ReadWrite_uint8 );
+	LUA->PushNumber( (double)FS::ReadWrite::uint8 );
 	LUA->SetField( -2, "VFS_WRITE_BYTE" );
 
 
 
-	LUA->PushNumber( FS::ReadWrite_data );
+	LUA->PushNumber( (double)FS::ReadWrite::data );
 	LUA->SetField( -2, "VFS_READ_DATA" );
 
-	LUA->PushNumber( FS::ReadWrite_string );
+	LUA->PushNumber( (double)FS::ReadWrite::string );
 	LUA->SetField( -2, "VFS_READ_STRING" );
 
-	LUA->PushNumber( FS::ReadWrite_uint32 );
+	LUA->PushNumber( (double)FS::ReadWrite::uint32 );
 	LUA->SetField( -2, "VFS_READ_UINT32" );
 
-	LUA->PushNumber( FS::ReadWrite_uint16 );
+	LUA->PushNumber( (double)FS::ReadWrite::uint16 );
 	LUA->SetField( -2, "VFS_READ_UINT16" );
 
-	LUA->PushNumber( FS::ReadWrite_uint8 );
+	LUA->PushNumber( (double)FS::ReadWrite::uint8 );
 	LUA->SetField( -2, "VFS_READ_UINT8" );
 
-	LUA->PushNumber( FS::ReadWrite_float );
+	LUA->PushNumber( (double)FS::ReadWrite::fp );
 	LUA->SetField( -2, "VFS_READ_FLOAT" );
 
-	LUA->PushNumber( FS::ReadWrite_double );
+	LUA->PushNumber( (double)FS::ReadWrite::doublefp );
 	LUA->SetField( -2, "VFS_READ_DOUBLE" );
 
-	LUA->PushNumber( FS::ReadWrite_uint8 );
+	LUA->PushNumber( (double)FS::ReadWrite::uint8 );
 	LUA->SetField( -2, "VFS_READ_BYTE" );
 
 
