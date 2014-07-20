@@ -113,6 +113,120 @@ static int Open( lua_State *state )
 	return 1;
 }
 
+static int RemoveFile( lua_State *state )
+{
+	LUA->CheckType( 1, GarrysMod::Lua::Type::STRING );
+
+	unsigned int len = 0;
+	const char *pszPath = LUA->GetString( 1, &len );
+	
+	if( !FS::g_pFilesystem )
+		LUA->ThrowError( "Filesystem not initialized" );
+
+	std::string strPath = pszPath;
+	size_t pos = -1;
+	while( ( pos = strPath.find( '\\', pos + 1 ) ) != strPath.npos )
+		strPath.replace( pos, pos, 1, '/' );
+
+	// Path validation.
+#if defined _WIN32
+	if( strPath[1] == ':' )
+	{
+		Msg( "Invalid Path ( Absolute path not allowed )" );
+		LUA->PushNil( );
+		return 1;
+	}
+#else
+	if( strPath[0] == "/" )
+	{
+		Msg( "Invalid Path ( Absolute path not allowed )" );
+		LUA->PushNil( );
+		return 1;
+	}
+#endif
+
+	if( strPath.find( "../" ) != strPath.npos )
+	{
+		Msg( "Invalid Path ( You can not leave the directory )" );
+		LUA->PushNil( );
+		return 1;
+	}
+
+	pos = strPath.rfind( '.' );
+	if( pos != strPath.npos && IsExtensionDisallowed( &strPath[pos] ) )
+	{
+		Msg( "Extension disallowed");
+		LUA->PushNil( );
+		return 1;
+	}
+
+	strPath.insert( 0, FILESYSTEM_JAIL_PATH "/" );
+	FS::g_pFilesystem->RemoveFile( strPath.c_str( ), "GAME" );
+
+	return 0;
+}
+
+static int RemoveDir( lua_State *state )
+{
+	LUA->CheckType( 1, GarrysMod::Lua::Type::STRING );
+
+	unsigned int len = 0;
+	const char *pszPath = LUA->GetString( 1, &len );
+	
+	if( !FS::g_pFilesystem )
+		LUA->ThrowError( "Filesystem not initialized" );
+
+	std::string strPath = pszPath;
+	size_t pos = -1;
+	while( ( pos = strPath.find( '\\', pos + 1 ) ) != strPath.npos )
+		strPath.replace( pos, pos, 1, '/' );
+
+	// Path validation.
+#if defined _WIN32
+	if( strPath[1] == ':' )
+	{
+		Msg( "Invalid Path ( Absolute path not allowed )" );
+		LUA->PushNil( );
+		return 1;
+	}
+#else
+	if( strPath[0] == "/" )
+	{
+		Msg( "Invalid Path ( Absolute path not allowed )" );
+		LUA->PushNil( );
+		return 1;
+	}
+#endif
+
+	if( strPath.find( "../" ) != strPath.npos )
+	{
+		Msg( "Invalid Path ( You can not leave the directory )" );
+		LUA->PushNil( );
+		return 1;
+	}
+
+	pos = strPath.rfind( '.' );
+	if( pos != strPath.npos && IsExtensionDisallowed( &strPath[pos] ) )
+	{
+		Msg( "Extension disallowed");
+		LUA->PushNil( );
+		return 1;
+	}
+
+	strPath.insert( 0, FILESYSTEM_JAIL_PATH "/" );
+	
+	// fucking paths
+	char fullpath[ 1024 ];
+	g_pFullFileSystem->RelativePathToFullPath( strPath.c_str( ), "GAME", fullpath, sizeof( fullpath ) );
+
+	LUA->PushBool( FS::RemoveDir( fullpath ) );
+
+	//FS::g_pFilesystem->RemoveFile( strPath.c_str( ), "GAME" );
+
+	return 1;
+}
+
+
 static int IsValidFH( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::USERDATA );
@@ -622,6 +736,14 @@ GMOD_MODULE_OPEN( )
 		LUA->PushCFunction( VFS::Close );
 		LUA->SetField( -2, "Close" );
 
+		// vfs.RemoveFile(filepath)
+		LUA->PushCFunction( VFS::RemoveFile );
+		LUA->SetField( -2, "RemoveFile" );
+		
+		// vfs.RemoveFile(filepath)
+		LUA->PushCFunction( VFS::RemoveFile );
+		LUA->SetField( -2, "RemoveDir" );
+		
 		// vfs.IsValid(handle)
 		LUA->PushCFunction( VFS::IsValidFH );
 		LUA->SetField( -2, "IsValid" );

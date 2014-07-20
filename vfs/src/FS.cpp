@@ -3,33 +3,43 @@
 namespace FS
 {
 
-IFileSystem *g_pFilesystem = NULL;
+	IFileSystem *g_pFilesystem = NULL;
 
-bool LoadFilesystem( )
-{
-	CreateInterfaceFn fsinterface = Sys_GetFactory( FILESYSTEM_STEAM_DLL );
-	if( !fsinterface )
+	bool LoadFilesystem( )
+	{
+		CreateInterfaceFn fsinterface = Sys_GetFactory( FILESYSTEM_STEAM_DLL );
+		if( !fsinterface )
+			return false;
+
+		g_pFilesystem = (IFileSystem *)fsinterface( FILESYSTEM_INTERFACE_VERSION, NULL );
+		if( g_pFilesystem != NULL )
+		{
+			g_pFilesystem->AddSearchPath( "garrysmod/" FILESYSTEM_JAIL_PATH, "GAME" );
+			return true;
+		}
+
 		return false;
-
-	g_pFilesystem = (IFileSystem *)fsinterface( FILESYSTEM_INTERFACE_VERSION, NULL );
-	if( g_pFilesystem != NULL )
-	{
-		g_pFilesystem->AddSearchPath( "garrysmod/" FILESYSTEM_JAIL_PATH, "GAME" );
-		return true;
 	}
 
-	return false;
-}
-
-bool UnloadFilesystem( )
-{
-	if( g_pFilesystem != NULL )
+	bool UnloadFilesystem( )
 	{
-		g_pFilesystem->RemoveSearchPath( "garrysmod/" FILESYSTEM_JAIL_PATH, "GAME" );
-		return true;
+		if( g_pFilesystem != NULL )
+		{
+			g_pFilesystem->RemoveSearchPath( "garrysmod/" FILESYSTEM_JAIL_PATH, "GAME" );
+			return true;
+		}
+
+		return false;
 	}
 
-	return false;
-}
+
+	bool RemoveDir(const char * pathname)
+	{
+		#if defined _WIN32
+			return _rmdir(pathname) == 0; 
+		#else
+			return rmdir(pathname)  == 0; 
+		#endif
+	}
 
 }
