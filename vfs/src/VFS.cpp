@@ -5,6 +5,9 @@
 
 #include <GarrysMod/Lua/Interface.h>
 
+#undef min
+#undef max
+
 #include <vector>
 #include <string>
 
@@ -64,14 +67,14 @@ static int Open( lua_State *state )
 		LUA->PushNil( );
 		return 1;
 	}
-#else
-	if( strPath[0] == "/" )
+#endif
+
+	if( strPath[0] == "/" || strPath[0] == "\\" )
 	{
 		Msg( "Invalid Path ( Absolute path not allowed )" );
 		LUA->PushNil( );
 		return 1;
 	}
-#endif
 
 	if( strPath.find( "../" ) != strPath.npos )
 	{

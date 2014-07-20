@@ -13,3 +13,9 @@ SOLUTION"vfs"
 	PROJECT()
 		targetprefix	"gmcl_"
 		SOURCE_SDK_LINKS()
+		
+		configuration 		"windows"
+		
+		configuration 		"linux"
+
+			buildoptions 		{ "-fpermissive" }
