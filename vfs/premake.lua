@@ -18,4 +18,5 @@ SOLUTION"vfs"
 		
 		configuration 		"linux"
 
-			buildoptions 		{ "-fpermissive" }
+			buildoptions		{ "-fpermissive" }
+			buildoptions		{ "-std=c++0x" }
