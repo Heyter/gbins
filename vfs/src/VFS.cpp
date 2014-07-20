@@ -69,7 +69,7 @@ static int Open( lua_State *state )
 	}
 #endif
 
-	if( strPath[0] == "/" || strPath[0] == "\\" )
+	if( (strPath[0] == '/') || (strPath[0] == '\\') )
 	{
 		Msg( "Invalid Path ( Absolute path not allowed )" );
 		LUA->PushNil( );
@@ -185,32 +185,28 @@ static int RemoveDir( lua_State *state )
 #if defined _WIN32
 	if( strPath[1] == ':' )
 	{
-		Msg( "Invalid Path ( Absolute path not allowed )" );
-		LUA->PushNil( );
-		return 1;
+		Warning( "Invalid Path ( Absolute path not allowed )\n" );
+		return 0;
 	}
 #else
 	if( strPath[0] == "/" )
 	{
-		Msg( "Invalid Path ( Absolute path not allowed )" );
-		LUA->PushNil( );
-		return 1;
+		Warning( "Invalid Path ( Absolute path not allowed )\n" );
+		return 0;
 	}
 #endif
 
 	if( strPath.find( "../" ) != strPath.npos )
 	{
-		Msg( "Invalid Path ( You can not leave the directory )" );
-		LUA->PushNil( );
-		return 1;
+		Warning( "Invalid Path ( You can not leave the directory )\n" );
+		return 0;
 	}
 
 	pos = strPath.rfind( '.' );
 	if( pos != strPath.npos && IsExtensionDisallowed( &strPath[pos] ) )
 	{
-		Msg( "Extension disallowed");
-		LUA->PushNil( );
-		return 1;
+		Warning( "Extension disallowed\n");
+		return 0;
 	}
 
 	strPath.insert( 0, FILESYSTEM_JAIL_PATH "/" );
