@@ -92,6 +92,7 @@ static int Open( lua_State *state )
 	}
 
 	strPath.insert( 0, FILESYSTEM_JAIL_PATH "/" );
+	//Warning("CreateDirHierarchy '%s'\n",strPath.c_str( ));
 	FS::g_pFilesystem->CreateDirHierarchy( strPath.c_str( ), "GAME" );
 
 	FileHandle_t fh = FS::g_pFilesystem->Open( strPath.c_str( ), pszMode, "GAME" );
@@ -176,7 +177,7 @@ static int RemoveDir( lua_State *state )
 	if( !FS::g_pFilesystem )
 		LUA->ThrowError( "Filesystem not initialized" );
 
-	std::string strPath = pszPath;
+	std::string strPath(pszPath);
 	size_t pos = -1;
 	while( ( pos = strPath.find( '\\', pos + 1 ) ) != strPath.npos )
 		strPath.replace( pos, pos, 1, '/' );
@@ -213,8 +214,12 @@ static int RemoveDir( lua_State *state )
 	
 	// fucking paths
 	char fullpath[ 1024 ];
-	g_pFullFileSystem->RelativePathToFullPath( strPath.c_str( ), "GAME", fullpath, sizeof( fullpath ) );
-
+	fullpath[0]=0;
+	
+	//Warning("REMOVE1 %s\n",strPath.c_str( ));
+	
+	FS::g_pFilesystem->RelativePathToFullPath( strPath.c_str( ), "GAME", fullpath, sizeof( fullpath ) );
+	//Warning("REMOVE %s\n",fullpath);
 	LUA->PushBool( FS::RemoveDir( fullpath ) );
 
 	//FS::g_pFilesystem->RemoveFile( strPath.c_str( ), "GAME" );
@@ -609,8 +614,10 @@ static int CRC32( lua_State *state )
 
 GMOD_MODULE_OPEN( )
 {
-	if( !FS::LoadFilesystem( ) )
+	if( !FS::LoadFilesystem() ) {
 		LUA->ThrowError( "Filesystem failed to load" );
+		return 0;
+	}
 	
 	CRC32::CRC32Init( );
 
@@ -737,7 +744,7 @@ GMOD_MODULE_OPEN( )
 		LUA->SetField( -2, "RemoveFile" );
 		
 		// vfs.RemoveFile(filepath)
-		LUA->PushCFunction( VFS::RemoveFile );
+		LUA->PushCFunction( VFS::RemoveDir );
 		LUA->SetField( -2, "RemoveDir" );
 		
 		// vfs.IsValid(handle)

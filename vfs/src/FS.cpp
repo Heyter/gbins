@@ -7,18 +7,16 @@ namespace FS
 
 	bool LoadFilesystem( )
 	{
-		CreateInterfaceFn fsinterface = Sys_GetFactory( FILESYSTEM_STEAM_DLL );
-		if( !fsinterface )
+		
+		CSysModule* FileSystemFactoryDLL = NULL;
+		if (!Sys_LoadInterface(FILESYSTEM_STEAM_DLL, FILESYSTEM_INTERFACE_VERSION, &FileSystemFactoryDLL, (void**)&g_pFilesystem)) 
 			return false;
+		
+		if( g_pFilesystem == nullptr ) return false;
 
-		g_pFilesystem = (IFileSystem *)fsinterface( FILESYSTEM_INTERFACE_VERSION, NULL );
-		if( g_pFilesystem != NULL )
-		{
-			g_pFilesystem->AddSearchPath( "garrysmod/" FILESYSTEM_JAIL_PATH, "GAME" );
-			return true;
-		}
-
-		return false;
+		g_pFilesystem->AddSearchPath( "garrysmod/" FILESYSTEM_JAIL_PATH, "GAME" );
+		
+		return true;
 	}
 
 	bool UnloadFilesystem( )
