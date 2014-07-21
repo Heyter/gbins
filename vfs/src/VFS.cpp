@@ -518,13 +518,13 @@ static int GarbageCollect( lua_State *state )
 
 	if( !FS::g_pFilesystem )
 	{
-		Warning( "GC: Filesystem not initialized\n" );
+		Warning( "GC: Filesystem not initialized???\n" );
 		return 0;
 	}
 
 	if( !CheckIsValid( userdata ) )
 	{
-		Warning( "GC: Invalid handle value (already closed?)\n" );
+		//Warning( "GC: Invalid handle value (already closed?)\n" );
 		return 0;
 	}
 	
