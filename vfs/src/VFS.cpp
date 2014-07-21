@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <string>
+#include <algorithm>
 
 namespace VFS
 {
@@ -47,70 +48,65 @@ static int Open( lua_State *state )
 	LUA->CheckType( 1, GarrysMod::Lua::Type::STRING );
 	LUA->CheckType( 2, GarrysMod::Lua::Type::STRING );
 
-	unsigned int len = 0;
-	const char *pszPath = LUA->GetString( 1, &len );
+	const char *pszPath = LUA->GetString( 1);
 	const char *pszMode = LUA->GetString( 2 );
 	
-	if( !FS::g_pFilesystem )
+	if( !FS::g_pFilesystem ) 
+	{
 		LUA->ThrowError( "Filesystem not initialized" );
-
-	std::string strPath = pszPath;
-	size_t pos = -1;
-	while( ( pos = strPath.find( '\\', pos + 1 ) ) != strPath.npos )
-		strPath.replace( pos, pos, 1, '/' );
-
-	// Path validation.
-#if defined _WIN32
-	if( strPath[1] == ':' )
-	{
-		Msg( "Invalid Path ( Absolute path not allowed )" );
-		LUA->PushNil( );
-		return 1;
+		return 0;
 	}
-#endif
-
-	if( (strPath[0] == '/') || (strPath[0] == '\\') )
+	
+	if( strlen(pszPath)<=1 ) 
 	{
-		Msg( "Invalid Path ( Absolute path not allowed )" );
-		LUA->PushNil( );
-		return 1;
+		LUA->ThrowError( "Invalid file" );
+		return 0;
+	}
+	
+	std::string strPath( pszPath );
+
+	std::replace( strPath.begin(), strPath.end(), '\\', '/');
+	
+	bool invalid_path = (strPath[0] == '/') || (strPath[0] == '\\') || (strPath[1] == ':' );
+
+	if (invalid_path)
+	{
+		LUA->ThrowError( "Absolute path not allowed" );
+		return 0;
 	}
 
 	if( strPath.find( "../" ) != strPath.npos )
 	{
-		Msg( "Invalid Path ( You can not leave the directory )" );
-		LUA->PushNil( );
-		return 1;
+		LUA->ThrowError( "../ is not allowed" );
+		return 0;
 	}
 
-	pos = strPath.rfind( '.' );
+	size_t pos = strPath.rfind( '.' );
 	if( pos != strPath.npos && IsExtensionDisallowed( &strPath[pos] ) )
 	{
-		Msg( "Extension disallowed");
-		LUA->PushNil( );
-		return 1;
+		LUA->ThrowError( "Bad file extension" );
+		return 0;
 	}
 
 	strPath.insert( 0, FILESYSTEM_JAIL_PATH "/" );
-	//Warning("CreateDirHierarchy '%s'\n",strPath.c_str( ));
-	FS::g_pFilesystem->CreateDirHierarchy( strPath.c_str( ), "GAME" );
-
+	
+	std::string strFolderPath = strPath.substr(0, strPath.find_last_of("\\/"));
+	//if (strFolderPath.length()>0) {
+		//Warning("W %s\n",strFolderPath.c_str());
+		FS::g_pFilesystem->CreateDirHierarchy( strFolderPath.c_str( ), "GAME" );
+	//}
 	FileHandle_t fh = FS::g_pFilesystem->Open( strPath.c_str( ), pszMode, "GAME" );
-	if( fh != NULL )
-	{
-		UserData *userdata = (UserData *)LUA->NewUserdata( sizeof( UserData ) );
-		userdata->data = fh;
-		userdata->type = GarrysMod::Lua::Type::USERDATA;	
-		userdata->valid = true;
 
-		LUA->CreateMetaTableType( "IVFS", GarrysMod::Lua::Type::USERDATA );
-		LUA->SetMetaTable( -2 );
-	}
-	else
-	{
-		LUA->PushNil( );
-	}
+	if (!fh) return 0;
+	
+	UserData *	userdata = (UserData *)LUA->NewUserdata( sizeof( UserData ) );
+				userdata -> data = fh;
+				userdata -> type = GarrysMod::Lua::Type::USERDATA;	
+				userdata -> valid = true;
 
+	LUA->CreateMetaTableType( "IVFS", GarrysMod::Lua::Type::USERDATA );
+	LUA->SetMetaTable( -2 );
+	
 	return 1;
 }
 
@@ -118,50 +114,46 @@ static int RemoveFile( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::STRING );
 
-	unsigned int len = 0;
-	const char *pszPath = LUA->GetString( 1, &len );
-	
-	if( !FS::g_pFilesystem )
+	const char *pszPath = LUA->GetString( 1 );
+		if( !FS::g_pFilesystem ) 
+	{
 		LUA->ThrowError( "Filesystem not initialized" );
-
-	std::string strPath = pszPath;
-	size_t pos = -1;
-	while( ( pos = strPath.find( '\\', pos + 1 ) ) != strPath.npos )
-		strPath.replace( pos, pos, 1, '/' );
-
-	// Path validation.
-#if defined _WIN32
-	if( strPath[1] == ':' )
-	{
-		Msg( "Invalid Path ( Absolute path not allowed )" );
-		LUA->PushNil( );
-		return 1;
+		return 0;
 	}
-#else
-	if( strPath[0] == "/" )
+	
+	if( strlen(pszPath)<=1 ) 
 	{
-		Msg( "Invalid Path ( Absolute path not allowed )" );
-		LUA->PushNil( );
-		return 1;
+		LUA->ThrowError( "Invalid file" );
+		return 0;
 	}
-#endif
+	
+	std::string strPath( pszPath );
+
+	std::replace( strPath.begin(), strPath.end(), '\\', '/');
+	
+	bool invalid_path = (strPath[0] == '/') || (strPath[0] == '\\') || (strPath[1] == ':' );
+
+	if (invalid_path)
+	{
+		LUA->ThrowError( "Absolute path not allowed" );
+		return 0;
+	}
 
 	if( strPath.find( "../" ) != strPath.npos )
 	{
-		Msg( "Invalid Path ( You can not leave the directory )" );
-		LUA->PushNil( );
-		return 1;
+		LUA->ThrowError( "../ is not allowed" );
+		return 0;
 	}
 
-	pos = strPath.rfind( '.' );
+	size_t pos = strPath.rfind( '.' );
 	if( pos != strPath.npos && IsExtensionDisallowed( &strPath[pos] ) )
 	{
-		Msg( "Extension disallowed");
-		LUA->PushNil( );
-		return 1;
+		LUA->ThrowError( "Bad file extension" );
+		return 0;
 	}
 
 	strPath.insert( 0, FILESYSTEM_JAIL_PATH "/" );
+	
 	FS::g_pFilesystem->RemoveFile( strPath.c_str( ), "GAME" );
 
 	return 0;
@@ -171,42 +163,42 @@ static int RemoveDir( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::STRING );
 
-	unsigned int len = 0;
-	const char *pszPath = LUA->GetString( 1, &len );
+	const char *pszPath = LUA->GetString( 1 );
 	
-	if( !FS::g_pFilesystem )
+	if( !FS::g_pFilesystem ) 
+	{
 		LUA->ThrowError( "Filesystem not initialized" );
-
-	std::string strPath(pszPath);
-	size_t pos = -1;
-	while( ( pos = strPath.find( '\\', pos + 1 ) ) != strPath.npos )
-		strPath.replace( pos, pos, 1, '/' );
-
-	// Path validation.
-#if defined _WIN32
-	if( strPath[1] == ':' )
-	{
-		Warning( "Invalid Path ( Absolute path not allowed )\n" );
 		return 0;
 	}
-#else
-	if( strPath[0] == "/" )
+	
+	if( strlen(pszPath)<=1 ) 
 	{
-		Warning( "Invalid Path ( Absolute path not allowed )\n" );
+		LUA->ThrowError( "Invalid file" );
 		return 0;
 	}
-#endif
+	
+	std::string strPath( pszPath );
+
+	std::replace( strPath.begin(), strPath.end(), '\\', '/');
+	
+	bool invalid_path = (strPath[0] == '/') || (strPath[0] == '\\') || (strPath[1] == ':' );
+
+	if (invalid_path)
+	{
+		LUA->ThrowError( "Absolute path not allowed" );
+		return 0;
+	}
 
 	if( strPath.find( "../" ) != strPath.npos )
 	{
-		Warning( "Invalid Path ( You can not leave the directory )\n" );
+		LUA->ThrowError( "../ is not allowed" );
 		return 0;
 	}
 
-	pos = strPath.rfind( '.' );
+	size_t pos = strPath.rfind( '.' );
 	if( pos != strPath.npos && IsExtensionDisallowed( &strPath[pos] ) )
 	{
-		Warning( "Extension disallowed\n");
+		LUA->ThrowError( "Bad file extension" );
 		return 0;
 	}
 
@@ -522,7 +514,7 @@ static int GarbageCollect( lua_State *state )
 	UserData *userdata = (UserData *)LUA->GetUserdata( 1 );
 	FileHandle_t fh = GET_FH( );
 
-	Warning( "GC: %p %p\n", userdata, fh );
+	//Warning( "GC: %p %p\n", userdata, fh );
 
 	if( !FS::g_pFilesystem )
 	{
@@ -618,6 +610,8 @@ GMOD_MODULE_OPEN( )
 		LUA->ThrowError( "Filesystem failed to load" );
 		return 0;
 	}
+	
+	FS::g_pFilesystem->CreateDirHierarchy( FILESYSTEM_JAIL_PATH, "GAME" );
 	
 	CRC32::CRC32Init( );
 
