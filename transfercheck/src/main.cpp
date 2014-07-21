@@ -1,4 +1,12 @@
 
+#include <string.h>
+#include <stdio.h>
+
+#include <dlfcn.h>
+#include <sys/mman.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #include "memutils.h"
 
@@ -7,7 +15,7 @@
 
 #include "detours.h"
 
-//#include "tier0/dbg.h"
+#include "tier0/dbg.h"
 
 
 extern "C" {
@@ -28,7 +36,7 @@ bool hook_IsValidFileForTransfer( const char * filepath )
 {
 	bool ret = false;
 
-	ret = detour_IsValidFileForTransfer->GetOriginalFunction(filepath);
+	ret = detour_IsValidFileForTransfer->GetOriginalFunction()(filepath);
 	
 	if (!L) return ret;
 	
@@ -71,23 +79,22 @@ extern "C" __attribute__( ( visibility("default") ) ) int gmod13_open( lua_State
 
 	if ( lHandle )
 	{
-		original_IsValidFileForTransfer = ResolveSymbol( lHandle, "_ZN8CNetChan22IsValidFileForTransferEPKc" );
+		original_IsValidFileForTransfer = (tIsValidFileForTransfer)ResolveSymbol( lHandle, "_ZN8CNetChan22IsValidFileForTransferEPKc" );
 		if (original_IsValidFileForTransfer) {
 			try {
 				detour_IsValidFileForTransfer = new MologieDetours::Detour<tIsValidFileForTransfer>(original_IsValidFileForTransfer, hook_IsValidFileForTransfer);
-				loaded = true;
 			}
 			catch(MologieDetours::DetourException &e) {
-				LOG("IsValidFileForTransfer: Detour failed: Internal error?\n");
+				Warning("IsValidFileForTransfer: Detour failed: Internal error?\n");
 			}
 		} else {
-			LOG("IsValidFileForTransfer: Detour failed: Signature not found. (plugin needs updating)\n");
+			Warning("IsValidFileForTransfer: Detour failed: Signature not found. (plugin needs updating)\n");
 		}
 
 		dlclose( lHandle );
 	} else 
 	{
-		LOG("handle failed???\n");
+		Warning("handle failed???\n");
 	}
 	
 	return 0;
