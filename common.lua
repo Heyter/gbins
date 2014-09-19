@@ -253,7 +253,9 @@ function LINUX()
 		defines 	{'LUA_SHARED="lua_shared_srv.so"'}
 		defines 	{'LUA_SHARED_CLIENT="lua_shared.so"'}
 		defines		{"COMPILER_GCC","POSIX","_POSIX","LINUX","_LINUX","GNUC","NO_MALLOC_OVERRIDE"}
+		if not FUCKSYMS then
 		linkoptions	{"-Wl,-z,defs"}
+		end
 		libdirs		{SRCDS_DIR..'/bin'}
 		links		{"rt","dl"}
 end
