@@ -15,6 +15,9 @@ SOLUTION"checkip"
 	LINUX()
 
 	PROJECT()
+		INCLUDES        "lua51"
+		INCLUDES        "sigscanning"
+		INCLUDES        "hooking"
 		SOURCE_SDK_LINKS()
 		configuration 		"windows"
 		configuration 		"linux"
