@@ -55,25 +55,22 @@
 
 #include "lua.h"
 #include "lauxlib.h"
-#include "lstate.h"
+//#include "lstate.h"
 
 #define REGIDX "*dbghelper*"
 
 /* both lua 5.1 and 5.2 can only yield under certain circumstances. */
 #if LUA_VERSION_NUM == 501
 	#define LUA51
-	#define YIELDCOND (L->nCcalls <= L->baseCcalls)
-
-	int lua_resume_real(lua_State *L, int nargs);
+	//#define YIELDCOND (L->nCcalls <= L->baseCcalls)
 #elif LUA_VERSION_NUM == 502
 	#define LUA52
-	#define YIELDCOND (L->nny == 0)
-
-	int lua_resume_real(lua_State *L, lua_State *from, int nargs);
+	//#define YIELDCOND (L->nny == 0)
 #else
 	#error "Lua version " LUA_VERSION " not supported"
 #endif
 
+int lua_resume_real(lua_State *L, int nargs);
 #define lua_resume lua_resume_real
 
 /* Only from a count event can one sensibly yield from a debug hook. Yielding
@@ -104,12 +101,12 @@ static void dbg_hook(lua_State *L, lua_Debug *ar)
 		#endif
 		case LUA_HOOKLINE: if (!evt) evt = "line"; break;
 		case LUA_HOOKCOUNT:
-			if (YIELDCOND) {
+			//if (YIELDCOND) {
 				lua_yield(L, 0);
 				return;
-			}
+			//}
 			/* reset last event if we can not yield here */
-			evt = NULL;
+			//evt = NULL;
 		break;
 		default: luaL_error(L, "unknown event");
 	}
@@ -151,7 +148,6 @@ static int dbg_resumeuntil(lua_State *L)
 	int count = luaL_optint(L, 3, 0);
 	int status, i;
 	int mask = 0;
-	lua_Debug ar;
 	char *name = NULL;
 	int nargs = 0;
 	int res = 2;
