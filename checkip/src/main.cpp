@@ -2,7 +2,7 @@
 #include <tier1/netadr.h>
 #include <detours.h>
 #include <iostream>
-#include <unordered_set>
+#include <set>
 
 #include "SymbolFinder.hpp"
 
@@ -23,8 +23,8 @@
 #endif
 
 typedef bool ( *tFilter_ShouldDiscard )( const netadr_t & );
-static tFilter_ShouldDiscard original_Filter_ShouldDiscard = nullptr;
-static MologieDetours::Detour<tFilter_ShouldDiscard> *detour_Filter_ShouldDiscard = nullptr;
+static tFilter_ShouldDiscard original_Filter_ShouldDiscard = NULL;
+static MologieDetours::Detour<tFilter_ShouldDiscard> *detour_Filter_ShouldDiscard = NULL;
 
 #if defined _WIN32
 
@@ -33,14 +33,14 @@ static MologieDetours::Detour<tFilter_ShouldDiscard> *detour_Filter_ShouldDiscar
 
 #elif defined __linux || defined __APPLE__
 
-#define SHOULD_DISCARD_SYM reinterpret_cast<const uint8_t *>( SYMBOL_PREFIX "_Z20Filter_ShouldDiscardRK8netadr_s" )
-#define SHOULD_DISCARD_SYMLEN 0
+#define FILTER_SHOULDDISCARD_SYM reinterpret_cast<const uint8_t *>( SYMBOL_PREFIX "_Z20Filter_ShouldDiscardRK8netadr_s" )
+#define FILTER_SHOULDDISCARD_SYMLEN 0
 
 #endif
 
 typedef void ( *tFilter_SendBan )( const netadr_t & ) ;
-static tFilter_SendBan original_Filter_SendBan = nullptr;
-static MologieDetours::Detour<tFilter_SendBan> *detour_Filter_SendBan = nullptr;
+static tFilter_SendBan original_Filter_SendBan = NULL;
+static MologieDetours::Detour<tFilter_SendBan> *detour_Filter_SendBan = NULL;
 
 #if defined _WIN32
 
@@ -54,7 +54,7 @@ static MologieDetours::Detour<tFilter_SendBan> *detour_Filter_SendBan = nullptr;
 
 #endif
 
-static std::unordered_set<uint32_t> filter;
+static std::set<uint32_t> filter;
 
 static bool hook_Filter_ShouldDiscard( const netadr_t &adr )
 {
@@ -68,7 +68,7 @@ static int EnableFirewallWhitelist( lua_State *state )
 	LUA->CheckType( 1, GarrysMod::Lua::Type::BOOL );
 
 	bool hook = LUA->GetBool( 1 );
-	if( hook && detour_Filter_ShouldDiscard == nullptr ) 
+	if( hook && detour_Filter_ShouldDiscard == NULL ) 
 	{
 		bool failed = false;
 		try
@@ -83,10 +83,10 @@ static int EnableFirewallWhitelist( lua_State *state )
 		if( failed )
 			LUA->ThrowError( "ShouldDiscard: detour failed, internal error?\n" );
 	}
-	else if( !hook && detour_Filter_ShouldDiscard != nullptr )
+	else if( !hook && detour_Filter_ShouldDiscard != NULL )
 	{
 		delete detour_Filter_ShouldDiscard;
-		detour_Filter_ShouldDiscard = nullptr;
+		detour_Filter_ShouldDiscard = NULL;
 	}
 
 	LUA->PushBool( true );
@@ -109,7 +109,7 @@ static int RemoveIP( lua_State *state )
 
 static int WhitelistReset( lua_State *state )
 {
-	filter.swap( std::unordered_set<uint32_t>( ) );
+	std::set<uint32_t>( ).swap( filter );
 	LUA->PushBool( true );
 	return 1;
 }
@@ -119,7 +119,7 @@ GMOD_MODULE_OPEN( )
 	SymbolFinder symfinder;
 
 	original_Filter_ShouldDiscard = reinterpret_cast<tFilter_ShouldDiscard>( symfinder.ResolveOnBinary( MAIN_BINARY_FILE, FILTER_SHOULDDISCARD_SYM, FILTER_SHOULDDISCARD_SYMLEN ) );
-	if( original_Filter_ShouldDiscard != nullptr )
+	if( original_Filter_ShouldDiscard != NULL )
 	{
 		LUA->PushSpecial( GarrysMod::Lua::SPECIAL_GLOB );
 
@@ -141,7 +141,7 @@ GMOD_MODULE_OPEN( )
 	}
 
 	original_Filter_SendBan = reinterpret_cast<tFilter_SendBan>( symfinder.ResolveOnBinary( MAIN_BINARY_FILE, FILTER_SENDBAN_SYM, FILTER_SENDBAN_SYMLEN ) );
-	if( original_Filter_SendBan != nullptr )
+	if( original_Filter_SendBan != NULL )
 	{
 		bool failed = false;
 		try
@@ -166,10 +166,10 @@ GMOD_MODULE_OPEN( )
 
 GMOD_MODULE_CLOSE( )
 {
-	if( detour_Filter_ShouldDiscard != nullptr )
+	if( detour_Filter_ShouldDiscard != NULL )
 		delete detour_Filter_ShouldDiscard;
 
-	if( detour_Filter_SendBan != nullptr )
+	if( detour_Filter_SendBan != NULL )
 		delete detour_Filter_SendBan;
 
 	return 0;
