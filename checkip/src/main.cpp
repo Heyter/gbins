@@ -6,16 +6,9 @@
 
 #include "SymbolFinder.hpp"
 
-#if !defined LUA_FUNCTION
-
-#define LUA_FUNCTION( name ) int name( lua_State *state )
-#define LUA_FUNCTION_STATIC( name ) static LUA_FUNCTION( name )
-
-#endif
-
 #if defined _WIN32
 
-#define MAIN_BINARY_FILE "bin/engine.dylib"
+#define MAIN_BINARY_FILE "engine.dll"
 
 #elif defined __linux
 
@@ -29,14 +22,14 @@
 
 #endif
 
-typedef bool ( *tShouldDiscard )( const netadr_t & );
-static tShouldDiscard original_ShouldDiscard = nullptr;
-static MologieDetours::Detour<tShouldDiscard> *detour_ShouldDiscard = nullptr;
+typedef bool ( *tFilter_ShouldDiscard )( const netadr_t & );
+static tFilter_ShouldDiscard original_Filter_ShouldDiscard = nullptr;
+static MologieDetours::Detour<tFilter_ShouldDiscard> *detour_Filter_ShouldDiscard = nullptr;
 
 #if defined _WIN32
 
-#define SHOULD_DISCARD_SYM reinterpret_cast<const uint8_t *>( "" )
-#define SHOULD_DISCARD_SYMLEN 0
+#define FILTER_SHOULDDISCARD_SYM reinterpret_cast<const uint8_t *>( "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x8B\x40\x30\x83\xEC\x08\x85\xC0" )
+#define FILTER_SHOULDDISCARD_SYMLEN 16
 
 #elif defined __linux || defined __APPLE__
 
@@ -51,8 +44,8 @@ static MologieDetours::Detour<tFilter_SendBan> *detour_Filter_SendBan = nullptr;
 
 #if defined _WIN32
 
-#define FILTER_SENDBAN_SYM reinterpret_cast<const uint8_t *>( "" )
-#define FILTER_SENDBAN_SYMLEN 0
+#define FILTER_SENDBAN_SYM reinterpret_cast<const uint8_t *>( "\x55\x8B\xEC\x8B\x45\x08\x6A\x6C\x68\x2A\x2A\x2A\x2A\x50\x6A\x01" )
+#define FILTER_SENDBAN_SYMLEN 16
 
 #elif defined __linux || defined __APPLE__
 
@@ -63,60 +56,58 @@ static MologieDetours::Detour<tFilter_SendBan> *detour_Filter_SendBan = nullptr;
 
 static std::unordered_set<uint32_t> filter;
 
-static void LOG( const char *x )
+static bool hook_Filter_ShouldDiscard( const netadr_t &adr )
 {
-	std::cerr << x;
-}
-
-static bool hook_ShouldDiscard( const netadr_t &adr )
-{
-	return filter.find( *(uint32_t *)&adr.ip[0] ) != filter.end( );
+	return filter.find( *(uint32_t *)&adr.ip[0] ) == filter.end( );
 }
 
 static void hook_Filter_SendBan( const netadr_t &adr ) { }
 
-LUA_FUNCTION_STATIC( EnableFirewallWhitelist )
+static int EnableFirewallWhitelist( lua_State *state )
 {
-	bool hook = LUA->GetBool( 1 );
-	LUA->Pop( 1 );
+	LUA->CheckType( 1, GarrysMod::Lua::Type::BOOL );
 
-	if( hook && detour_ShouldDiscard == nullptr ) 
+	bool hook = LUA->GetBool( 1 );
+	if( hook && detour_Filter_ShouldDiscard == nullptr ) 
 	{
+		bool failed = false;
 		try
 		{
-			detour_ShouldDiscard = new MologieDetours::Detour<tShouldDiscard>( original_ShouldDiscard, hook_ShouldDiscard );
+			detour_Filter_ShouldDiscard = new MologieDetours::Detour<tFilter_ShouldDiscard>( original_Filter_ShouldDiscard, hook_Filter_ShouldDiscard );
 		}
 		catch( MologieDetours::DetourException &e )
 		{
-			LOG( "ShouldDiscard: Detour failed: Internal error?\n" );
-			return 0;
+			failed = true;
 		}
+
+		if( failed )
+			LUA->ThrowError( "ShouldDiscard: detour failed, internal error?\n" );
 	}
-	else if( !hook && detour_ShouldDiscard != nullptr )
+	else if( !hook && detour_Filter_ShouldDiscard != nullptr )
 	{
-		delete detour_ShouldDiscard;
-		detour_ShouldDiscard = nullptr;
+		delete detour_Filter_ShouldDiscard;
+		detour_Filter_ShouldDiscard = nullptr;
 	}
 
 	LUA->PushBool( true );
 	return 1;
 }
 
-LUA_FUNCTION_STATIC( WhitelistIP )
+static int WhitelistIP( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::NUMBER );
 	filter.insert( static_cast<uint32_t>( LUA->GetNumber( 1 ) ) );
 	return 0;
 }
 
-LUA_FUNCTION_STATIC( RemoveIP )
+static int RemoveIP( lua_State *state )
 {
 	LUA->CheckType( 1, GarrysMod::Lua::Type::NUMBER );
 	filter.erase( static_cast<uint32_t>( LUA->GetNumber( 1 ) ) );
 	return 0;
 }
 
-LUA_FUNCTION_STATIC( WhitelistReset )
+static int WhitelistReset( lua_State *state )
 {
 	filter.swap( std::unordered_set<uint32_t>( ) );
 	LUA->PushBool( true );
@@ -127,8 +118,8 @@ GMOD_MODULE_OPEN( )
 {
 	SymbolFinder symfinder;
 
-	original_ShouldDiscard = reinterpret_cast<tShouldDiscard>( symfinder.ResolveOnBinary( MAIN_BINARY_FILE, SHOULD_DISCARD_SYM, SHOULD_DISCARD_SYMLEN ) );
-	if( original_ShouldDiscard != nullptr )
+	original_Filter_ShouldDiscard = reinterpret_cast<tFilter_ShouldDiscard>( symfinder.ResolveOnBinary( MAIN_BINARY_FILE, FILTER_SHOULDDISCARD_SYM, FILTER_SHOULDDISCARD_SYMLEN ) );
+	if( original_Filter_ShouldDiscard != nullptr )
 	{
 		LUA->PushSpecial( GarrysMod::Lua::SPECIAL_GLOB );
 
@@ -146,24 +137,28 @@ GMOD_MODULE_OPEN( )
 	}
 	else
 	{
-		LOG( "ShouldDiscard: Detour failed: Signature not found. (plugin needs updating)\n" );
+		LUA->ThrowError( "Filter_ShouldDiscard: detour failed, signature not found. (plugin needs updating)\n" );
 	}
 
 	original_Filter_SendBan = reinterpret_cast<tFilter_SendBan>( symfinder.ResolveOnBinary( MAIN_BINARY_FILE, FILTER_SENDBAN_SYM, FILTER_SENDBAN_SYMLEN ) );
 	if( original_Filter_SendBan != nullptr )
 	{
+		bool failed = false;
 		try
 		{
-			detour_Filter_SendBan = new MologieDetours::Detour<tFilter_SendBan>(original_Filter_SendBan, hook_Filter_SendBan);
+			detour_Filter_SendBan = new MologieDetours::Detour<tFilter_SendBan>( original_Filter_SendBan, hook_Filter_SendBan );
 		}
 		catch( MologieDetours::DetourException &e )
 		{
-			LOG("Filter_SendBan: Detour failed: Internal error?\n");
+			failed = true;
 		}
+
+		if( failed )
+			LUA->ThrowError( "Filter_SendBan: detour failed, internal error?\n" );
 	}
 	else
 	{
-		LOG("Filter_SendBan: Detour failed: Signature not found. (plugin needs updating)\n");
+		LUA->ThrowError( "Filter_SendBan: detour failed, signature not found. (plugin needs updating)\n" );
 	}
 	
 	return 0;
@@ -171,8 +166,8 @@ GMOD_MODULE_OPEN( )
 
 GMOD_MODULE_CLOSE( )
 {
-	if( detour_ShouldDiscard != nullptr )
-		delete detour_ShouldDiscard;
+	if( detour_Filter_ShouldDiscard != nullptr )
+		delete detour_Filter_ShouldDiscard;
 
 	if( detour_Filter_SendBan != nullptr )
 		delete detour_Filter_SendBan;
