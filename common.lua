@@ -127,6 +127,7 @@ local include_helpers = {
 		func = function(_,i)
 			includedirs{SIGSCANNING}
 			if i then
+				files{SIGSCANNING..'/SymbolFinder.cpp'}
 				configuration 		"windows"
 					files{SIGSCANNING..'/sigscan.cpp'}
 				configuration 		"linux"

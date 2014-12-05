@@ -3,8 +3,11 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#ifndef _WIN32
+
+#if !defined _WIN32
+
 #include <vector>
+
 #endif
 
 class SymbolFinder
@@ -24,14 +27,19 @@ public:
 private:
 	bool GetLibraryInfo( const void *handle, struct DynLibInfo &info );
 
-#if __linux
+#if defined __linux
+
 	std::vector<struct LibSymbolTable *> symbolTables;
-#elif __APPLE__
+
+#elif defined __APPLE__
+
 	std::vector<struct LibSymbolTable *> symbolTables;
 	struct dyld_all_image_infos *m_ImageList;
 	int m_OSXMajor;
 	int m_OSXMinor;
+
 #endif
+
 };
 
 #endif
