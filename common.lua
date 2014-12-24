@@ -213,9 +213,13 @@ function SOLUTION(name)
 		platforms { "x32" }
 	end
 	
-	if optimize then
+	if optimize and DEBUG~=true then
 		optimize"On"
+	else
+		optimize"Off"
 	end
+
+	-- debug symbols are always built in, DEBUG just makes them not be stripped
 	flags		{"NoPCH","Symbols"}
 	
 	if vectorextensions then
@@ -286,6 +290,12 @@ function PROJECT()
 				--"fopen=dont_use_fopen",
 			}
 
+	if DEBUG ~= true then
+		defines "NDEBUG"
+	else
+		defines "DEBUG"
+	end
+
 	files	{"src/*.cpp"}
 
 	targetprefix			"gmsv_"
@@ -300,8 +310,10 @@ function PROJECT()
 	configuration 			"linux"
 		targetsuffix 		"_linux"
 		targetextension 	".dll"
-		postbuildcommands { "strip --keep-file-symbols --strip-debug -p %{cfg.linktarget.relpath}" }
-	
+		if DEBUG~=true then
+			postbuildcommands { "strip --keep-file-symbols --strip-debug -p %{cfg.linktarget.relpath}" }
+		end
+
 	project(_SOLUTION_NAME)
 	
 end
