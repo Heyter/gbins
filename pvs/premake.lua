@@ -1,3 +1,4 @@
+DEBUG=true
 dofile("../common.lua")
 
 RequireDefaultlibs()

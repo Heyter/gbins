@@ -3,9 +3,14 @@
 
 #pragma comment(linker, "/NODEFAULTLIB:libcmt") 
 #define _RETAIL
-#define WINDOWS_LEAN_AND_MEAN
 #define GAME_DLL
-#define ENGINE_LIB "engine.dll"
+
+#ifdef _WIN32
+	#define WINDOWS_LEAN_AND_MEAN
+	#define ENGINE_LIB "engine.dll"
+#elif defined _LINUX
+	#define ENGINE_LIB "engine_srv.so"
+#endif
 
 #include "MODULE_LuaOO.h"
 #include "eiface.h"
