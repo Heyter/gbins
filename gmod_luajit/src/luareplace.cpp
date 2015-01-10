@@ -4,29 +4,7 @@
 extern "C" {
 
 // Including lj_obj.h causes errors
-// _BitScanForward and _BitScanReverse aren't defined in EXACTLY
-// the same way somewhere else
-// Work around it
-struct lua_State {
-  int nextgc;
-  char marked;
-  char gct;
-  char dummy_ffid;	/* Fake FF_C for curr_funcisL() on dummy frames. */
-  char status;	/* Thread status. */
-  int glref;		/* Link to global state. */
-  int gclist;		/* GC chain. */
-  long long *base;		/* Base of currently executing function. */
-  long long *top;		/* First free slot in the stack. */
-  int maxstack;	/* Last free slot in the stack. */
-  int stack;		/* Stack base. */
-  int openupval;	/* List of open upvalues in the stack. */
-  int env;		/* Thread environment (table of globals). */
-  void *cframe;		/* End of C stack frame chain. */
-  int stacksize;	/* True stack size (incl. LJ_STACK_EXTRA). */
-  int padding[6];
-  void* LuaInterface;
-};
-
+	#include "lj_obj.h"
 }
 #include "gm_lua.h"
 
@@ -52,11 +30,15 @@ luaL_openlibs_t luaL_openlibs_p = NULL;
 int (*luaL_newmetatable_type_p)(lua_State*, const char*, int);
 extern "C" {
 	int (*lua_resume_real)(lua_State*,int narg);
+	LUA_API lua_State *(lua_newthread) (lua_State *L);
 }
 
 
+
+MologieDetours::Detour<lua_newthread_t>* lua_newthread_mologie_hook = NULL;
+
 lua_State *lua_newthread_hook(lua_State* L) {
-	lua_State* L1 = lua_newthread_p(L);
+	lua_State* L1 = lua_newthread_mologie_hook->GetOriginalFunction()(L);
 	printf("newthread\n");
 	L1->LuaInterface = L->LuaInterface;
 	return L1;
@@ -138,10 +120,18 @@ void Init() {
 	if (lua_newthread_p) DetourAttach(&(PVOID&)lua_newthread_p, lua_newthread_hook);
 	if (luaL_openlibs_p) DetourAttach(&(PVOID&)luaL_openlibs_p, luaL_openlibs_hook);
 	DetourTransactionCommit();
-#elseif __LINUX__
+#else
 	lua_resume_real = lua_resume;
+	printf("DGB: %p %p\n",lua_newthread,lua_newthread_hook);
 	lua_newthread_p = lua_newthread;
-	lua_newthread = lua_newthread_hook;
+	try {
+		lua_newthread_mologie_hook = new MologieDetours::Detour<lua_newthread_t>(lua_newthread, lua_newthread_hook);
+	}
+	catch(MologieDetours::DetourException &e) {
+		printf("hook1: Detour failed: Internal error?\n");
+		return;
+	}
+
 	
 	//FUNCLIST(DETOUR_ATTACH_FUNCS)
 	//if (glua_resume) DetourAttach(&(PVOID&)glua_resume, lua_resume);

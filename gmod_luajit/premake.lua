@@ -7,7 +7,7 @@ SOLUTION"serverplugin_luajit"
 	targetdir	"Release"
 	INCLUDES	"source_sdk"
 	INCLUDES	"hooking"			
-	INCLUDES	"luajit"
+	INCLUDES	"luajit"	
 	INCLUDES	"sigscanning"
 	defines		{"PRELOADPLUGIN","GMMODULE","GAME_DLL"}
 	
@@ -18,6 +18,7 @@ SOLUTION"serverplugin_luajit"
 		SOURCE_SDK_LINKS()
 		
 		INCLUDES	"luajit"
+		INCLUDES	"hooking"
 		
 		configuration 		"windows"
 			--defines 	"__WIN32__"
@@ -26,6 +27,7 @@ SOLUTION"serverplugin_luajit"
 		configuration 		"linux"
 			links	{"luajit","dl","rt","m","pthread","c"}
 			defines {"_GNU_SOURCE","GNU_SOURCE"}
+			--linkoptions		{"-Wl,-wrap,lua_newthread"}
 			--linkoptions		{"-Wl,-rpath='$$ORIGIN'"}
 			--linkoptions		{"garrysmod/bin/server_srv.so"}
 			--prelinkcommands	{"mkdir -p garrysmod/bin && ln -fs "..SRCDS_DIR.."/garrysmod/bin/server_srv.so garrysmod/bin/server_srv.so "}

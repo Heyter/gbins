@@ -22,7 +22,7 @@ struct FunctionSig {
 	#define GETSYMBOL GetProcAddress
 #elif defined __LINUX__
 	#define MODULE_T void*
-	#define OPEN_LIBRARY(x) dlopen( x ".so", RTLD_LAZY)
+	#define OPEN_LIBRARY(x) dlopen( "garrysmod/bin/" x "_srv.so", RTLD_LAZY)
 	#define CLOSE_LIBRARY dlclose
 	#define GETSYMBOL dlsym
 
@@ -40,10 +40,12 @@ MODULE_T lua_shared = NULL;
 
 
 void InitLuaAPI() {
-	printf("Replacing luajit\n");
+	printf("Replacing luajit...");
 	lua_shared = OPEN_LIBRARY( "lua_shared" );
+	
 	FUNCLIST(GETFUNCS)
 	glua_resume = (lua_resume_t) GETSYMBOL(lua_shared, "lua_resume_real");
+	printf("%p %p\n",lua_shared,glua_resume);
 }
 
 void ShutdownLuaAPI() {
