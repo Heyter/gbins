@@ -5,8 +5,8 @@ RequireDefaultlibs()
 
 
 SOLUTION"luacurl"
+
 	language"C"
-	targetdir	"Release"
 	INCLUDES	"lua51"
 	defines		{"NDEBUG"}
 	

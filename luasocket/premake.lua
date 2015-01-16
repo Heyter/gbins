@@ -6,7 +6,6 @@ RequireDefaultlibs()
 
 SOLUTION"luasocket"
 	language"C"
-	targetdir	"Release"
 	INCLUDES	"lua51"
 	includedirs	{"luasocket/src"}
 	defines		{"NDEBUG"}

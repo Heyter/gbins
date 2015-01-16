@@ -4,7 +4,6 @@ RequireDefaultlibs()
 
 SOLUTION"evilmine"
 	
-	targetdir	"Release"
 	INCLUDES	"sigscanning"
 	INCLUDES	"lua51"
 	INCLUDES	"source_sdk"

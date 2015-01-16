@@ -1,1 +1,1 @@
-git clone --depth 0 https://github.com/diegonehab/luasocket.git
+git clone --depth 1 --branch master https://github.com/diegonehab/luasocket.git

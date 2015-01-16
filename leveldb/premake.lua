@@ -7,7 +7,6 @@ dofile("../common.lua")
 
 SOLUTION"leveldb"
 	
-	targetdir	"Release"
 	INCLUDES	"source_sdk"
 	INCLUDES	"backwards_headers"
 	

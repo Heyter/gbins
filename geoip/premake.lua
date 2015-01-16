@@ -5,7 +5,6 @@ RequireDefaultlibs()
 
 SOLUTION"geoip"
 	
-	targetdir	"Release"
 	INCLUDES	"gmod_sdk"
 	defines		{"NDEBUG"}
 	includedirs	"geoip/"

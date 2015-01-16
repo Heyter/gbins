@@ -6,7 +6,6 @@ RequireDefaultlibs()
 
 SOLUTION"lpeg"
 	language"C"
-	targetdir	"Release"
 	INCLUDES	"lua51"
 	includedirs	{"lpeg"}
 	defines		{"NDEBUG"}

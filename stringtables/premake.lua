@@ -6,7 +6,6 @@ RequireRuntime()
 
 SOLUTION"stringtables"
 	
-	targetdir	"Release"
 	INCLUDES	"source_sdk"
 	INCLUDES"hooking"
 	INCLUDES	"backwards_headers"

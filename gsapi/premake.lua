@@ -5,7 +5,6 @@ RequireRuntime()
 
 SOLUTION"gameserver"
 	
-	targetdir	"Release"
 	INCLUDES	"steamworks"
 	
 	INCLUDES	"gmod_sdk"

@@ -6,7 +6,6 @@ RequireRuntime()
 
 SOLUTION"sourcenetinfo"
 	
-	targetdir	"Release"
 	INCLUDES	"source_sdk"
 	INCLUDES	"backwards_headers"
 	defines		{"NDEBUG"}

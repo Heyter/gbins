@@ -4,7 +4,6 @@ RequireDefaultlibs()
 
 SOLUTION"serverplugin_luajit"
 	
-	targetdir	"Release"
 	INCLUDES	"source_sdk"
 	INCLUDES	"hooking"			
 	INCLUDES	"luajit"	

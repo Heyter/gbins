@@ -4,7 +4,6 @@ RequireDefaultlibs()
 
 SOLUTION"enginespew"
 	
-	targetdir	"Release"
 	INCLUDES	"source_sdk"
 	INCLUDES	"gmod_sdk"
 	defines		{"NDEBUG"}

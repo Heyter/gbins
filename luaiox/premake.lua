@@ -6,7 +6,6 @@ RequireDefaultlibs()
 
 SOLUTION"luaiox"
 	language"C"
-	targetdir	"Release"
 	INCLUDES	"lua51"
 	defines		{"NDEBUG"}
 	

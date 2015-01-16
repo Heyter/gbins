@@ -5,7 +5,6 @@ RequireRuntime()
 
 SOLUTION"sourcenet"
 	
-	targetdir	"Release"
 	INCLUDES	"source_sdk"
 	INCLUDES	"hooking"
 	INCLUDES	"sigscanning"
