@@ -1,7 +1,7 @@
 #include <GarrysMod/Lua/Interface.h>
 #include "LuaInterface.h"
 #include <tier1/netadr.h>
-#include <SymbolFinder.hpp>
+#include <symbolfinder.hpp>
 #include <detours.h>
 #include <cstdint>
 #include <iostream>
