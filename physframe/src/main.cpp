@@ -34,6 +34,8 @@ extern "C" {
 }
 
 
+lua_State* L = NULL;
+
 
 // SEE IF I CARE ANYMORE
 class CPhysicsHook;
@@ -46,12 +48,49 @@ void SetPhysPaused(bool should)
 	m_bPaused = (bool *)(physhook_class + 88); // from CPhysicsHook::LevelInitPostEntity() 
 	*m_bPaused = should;
 }
+bool GetPhysPaused() 
+{
+	int physhook_class = (int)func_PhysicsGameSystem();
+	bool *m_bPaused;
+	m_bPaused = (bool *)(physhook_class + 88); // from CPhysicsHook::LevelInitPostEntity() 
+	return *m_bPaused;
+}
 
 
+bool should_stop_physics_damnit;
+
+extern "C" __attribute__ ((visibility ("default"))) int stop_physics_damnit()
+{
+	should_stop_physics_damnit = true;
+	return true;
+}
+
+typedef void		 (*	tPhysOnCleanupDeleteList ) 						(  ) ;
+						tPhysOnCleanupDeleteList 		original_PhysOnCleanupDeleteList	= NULL;
+MologieDetours::Detour< tPhysOnCleanupDeleteList>*	detour_PhysOnCleanupDeleteList	= NULL;
+
+void hook_PhysOnCleanupDeleteList( )
+{
+	if (should_stop_physics_damnit) 
+		return;
+	
+	return detour_PhysOnCleanupDeleteList->GetOriginalFunction()();
+}
 
 
+typedef bool		 (*	tPhysIsInCallback ) 						(  ) ;
+						tPhysIsInCallback 		original_PhysIsInCallback	= NULL;
+MologieDetours::Detour< tPhysIsInCallback>*	detour_PhysIsInCallback	= NULL;
 
-lua_State* L = NULL;
+bool hook_PhysIsInCallback( )
+{
+	if (should_stop_physics_damnit) {
+		return false;
+	}
+	return detour_PhysIsInCallback->GetOriginalFunction()();
+}
+
+
 
 typedef void		 (*	tPhysFrame ) 						( float ) ;
 						tPhysFrame 		original_PhysFrame	= NULL;
@@ -153,6 +192,14 @@ int SetShouldSimulate( lua_State* L )
 	return 0;
 }
 
+int GetShouldSimulate( lua_State* L ) 
+{
+	
+	bool ret = !GetPhysPaused();
+	lua_pushboolean(L,ret);
+	return 1;
+}
+
 extern "C" __attribute__( ( visibility("default") ) ) int gmod13_open( lua_State* LL )
 {
 	L=LL;
@@ -166,10 +213,39 @@ extern "C" __attribute__( ( visibility("default") ) ) int gmod13_open( lua_State
 		if (func_PhysicsGameSystem) {
 			lua_pushcfunction(L,SetShouldSimulate);
 			lua_setglobal(L, "SetShouldSimulate");
+			
+			lua_pushcfunction(L, GetShouldSimulate);
+			lua_setglobal(L, "GetShouldSimulate");
 		} else {
 			Warning("Function PhysicsGameSystem missing!!!\n");
 		}
+
+		original_PhysOnCleanupDeleteList = (tPhysOnCleanupDeleteList)ResolveSymbol( lHandle, "_Z23PhysOnCleanupDeleteListv" );
+		if (original_PhysOnCleanupDeleteList) {
+			try {
+				detour_PhysOnCleanupDeleteList = new MologieDetours::Detour<tPhysOnCleanupDeleteList>(original_PhysOnCleanupDeleteList, hook_PhysOnCleanupDeleteList);
+			}
+			catch(MologieDetours::DetourException &e) {
+				Warning("PhysOnCleanupDeleteList: Detour failed: Internal error?\n");
+			}
+		} else {
+			Warning("PhysOnCleanupDeleteList: Detour failed: Signature not found. (plugin needs updating)\n");
+		}
+		
+		original_PhysIsInCallback = (tPhysIsInCallback)ResolveSymbol( lHandle, "_Z16PhysIsInCallbackv" );
+		if (original_PhysIsInCallback) {
+			try {
+				detour_PhysIsInCallback = new MologieDetours::Detour<tPhysIsInCallback>(original_PhysIsInCallback, hook_PhysIsInCallback);
+			}
+			catch(MologieDetours::DetourException &e) {
+				Warning("PhysIsInCallback: Detour failed: Internal error?\n");
+			}
+		} else {
+			Warning("PhysIsInCallback: Detour failed: Signature not found. (plugin needs updating)\n");
+		}
+
 		dlclose( lHandle );
+		
 	} else 
 	{
 		Warning("Finding server_srv failed???\n");
@@ -199,8 +275,6 @@ extern "C" __attribute__( ( visibility("default") ) ) int gmod13_open( lua_State
 		Warning("handle failed???\n");
 	}
 	
-	
-	
 	return 0;
 }
 
@@ -212,6 +286,12 @@ extern "C" __attribute__( ( visibility("default") ) ) int gmod13_close( lua_Stat
 	
 	if (detour_expand_tree) {
 		delete detour_expand_tree;
+	}
+	if (detour_PhysIsInCallback) {
+		delete detour_PhysIsInCallback;
+	}
+	if (detour_PhysOnCleanupDeleteList) {
+		delete detour_PhysOnCleanupDeleteList;
 	}
 	
 	L = NULL;

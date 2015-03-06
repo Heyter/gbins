@@ -15,6 +15,8 @@ SOLUTION"physframe"
 	LINUX()
 
 	PROJECT()
+
+		files	{"src/*.c"}
 		SOURCE_SDK_LINKS()
 		INCLUDES        "lua51"
 		INCLUDES        "hooking"
