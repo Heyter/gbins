@@ -2,11 +2,13 @@
 #ifdef WIN32
 	
 	#include <stdio.h> 
-	#pragma comment(lib, "libcares")
 	#define snprintf _snprintf 
 	#define vsnprintf _vsnprintf 
 	#define strcasecmp _stricmp 
 	#define strncasecmp _strnicmp 
+	
+	#include <winsock2.h>
+	
 #else
 	#include <dlfcn.h>
 	#include <sys/mman.h>
@@ -34,11 +36,23 @@ int  nfds = AF_INET;
 fd_set read_fds, write_fds;
 struct timeval *tvp, tv;
 
-//#include "common/GMLuaModule.h"
-#include "ILuaModuleManager.h"
-GMOD_MODULE( Load, Unload );
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
 
-ILuaInterface* gLua;
+#ifdef _WIN32
+	#define GLUA_DLL_EXPORT  __declspec( dllexport ) 
+#else
+	#define GLUA_DLL_EXPORT	 __attribute__((visibility("default"))) 
+#endif
+
+
+
+
+lua_State* L;
+
+
+
 
 static void callback(void *arg, int status, int timeouts, struct hostent *host)
 {
@@ -47,56 +61,64 @@ static void callback(void *arg, int status, int timeouts, struct hostent *host)
 	(void)timeouts;
 
 	
-	ILuaObject *hookTable = gLua->GetGlobal( "cares" );
-	ILuaObject *hookCallFunc = hookTable->GetMember( "Callback" );
+	if (!L) return;
 	
-	gLua->Push( hookCallFunc );
-
-	gLua->Push((char *) arg);
+	lua_getglobal(L, "cares");                 		
+		lua_getfield(L, -1, "Callback");         
 		
-	gLua->Push((double)status);
-	
-	int vars=2;	
 		
-	if (status == ARES_SUCCESS)
-	{
-		for (p = host->h_addr_list; *p; p++)
-		{
+		lua_pushstring(L,(char *) arg);
 			
-			char addr_buf[46] = "HUGE ERROR, wTF!";
-
-			inet_ntop(host->h_addrtype, *p, addr_buf, sizeof(addr_buf));
-			//gLua->Msg("[Ares DLL] Resolv:  %-32s\t%s\n", host->h_name, addr_buf);
-
-			gLua->Push(addr_buf);
-			gLua->Push(host->h_name);
-
-			vars+=2;
-		}
-	}
-
+		lua_pushnumber(L,(double)status);
 		
-	gLua->Call(vars);
+		int vars=2;
+			
+		if (status == ARES_SUCCESS)
+		{
+			for (p = host->h_addr_list; *p; p++)
+			{
+				
+				char addr_buf[128] = "<INVALID>";
+
+				inet_ntop(host->h_addrtype, *p, addr_buf, sizeof(addr_buf));
+
+				lua_pushstring(L,addr_buf);
+				lua_pushstring(L,host->h_name);
+
+				vars+=2;
+			}
+		} 
+			
+		if (lua_pcall(L, vars, 0, 0) == 0) {
+			
+		} else { // errored
+			const char* err = lua_tostring(L, -1);
+			printf("<CARES FAIL: %s>\n",err);
+		}
+
+	lua_pop(L, 1); 
+	
+	return;
+
 	
 }
 
-LUA_FUNCTION(Resolve) {
+int __Resolve(lua_State *LL) 
+{
+	const char *resolveAddr = luaL_checkstring(L, 1);
+	const char *optarg = luaL_checkstring(L, 2);
+	
+	if (!resolveAddr || !optarg) return 0;
 	
 	int  addr_family = AF_INET;
 	struct in_addr addr4;
 	struct ares_in6_addr addr6;
   
-	gLua->CheckType( 1, Type::STRING );
-	const char *resolveAddr = gLua->GetString( 1 );
-	
-	gLua->CheckType( 2, Type::STRING );
-	const char *optarg = gLua->GetString( 2 );
-
 
     if (!strcasecmp(optarg,"a"))
-    addr_family = AF_INET;
+		addr_family = AF_INET;
     else if (!strcasecmp(optarg,"aaaa"))
-    addr_family = AF_INET6;
+		addr_family = AF_INET6;
 
 
 
@@ -126,13 +148,15 @@ LUA_FUNCTION(Die) {
 	return 0;
 }*/
 
-timeval tv2 = {0,0};
+struct timeval tv2 = {0,0};
 
-LUA_FUNCTION(Call) {
+int __Call(lua_State *LL) 
+{
+	L=LL;
     FD_ZERO(&read_fds);
     FD_ZERO(&write_fds);
     nfds = ares_fds(channel, &read_fds, &write_fds);
-	Lua()->Push((double)nfds);
+	lua_pushnumber(L,(double)nfds);
     if (nfds == 0) {
 		return 1;
 	}
@@ -145,11 +169,13 @@ LUA_FUNCTION(Call) {
     return 1;
 }
 
-int Load( lua_State *L )
-{
-	gLua = Lua();
 
-	// Initialize.
+
+GLUA_DLL_EXPORT int gmod13_open( lua_State* LL )
+{
+	L=LL;
+	
+
 	int status = AF_INET;
 	#ifdef USE_WINSOCK
 		WORD wVersionRequested = MAKEWORD(USE_WINSOCK,USE_WINSOCK);
@@ -171,16 +197,16 @@ int Load( lua_State *L )
 		return 0;
 	}
 
-	ILuaObject *cares = Lua()->GetGlobal( "cares" );
-		cares->SetMember( "__Resolve", Resolve );
-		cares->SetMember( "__Call", Call );
-		
-	cares->UnReference();
-
+	lua_getglobal(L, "cares");
+	lua_pushcfunction(L, __Resolve);
+	lua_setfield(L, -2, "__Resolve");
+	lua_pushcfunction(L, __Call);
+	lua_setfield(L, -2, "__Call");
+	
 	return 0;
 }
 
-int Unload( lua_State *L )
+GLUA_DLL_EXPORT int gmod13_close( lua_State* LL )
 {
 	 ares_destroy(channel);
 
@@ -189,7 +215,9 @@ int Unload( lua_State *L )
 	#ifdef USE_WINSOCK
 	  WSACleanup();
 	#endif
-
+	
+	L=NULL;
+	
 	return 0;
 }
 

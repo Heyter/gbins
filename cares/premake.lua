@@ -5,16 +5,24 @@ dofile("../common.lua")
 
 
 SOLUTION"cares"
+	language"C"
 	
-	INCLUDES	"source_sdk"
-	INCLUDES	"backwards_headers"
-	includedirs	{"cares/"}
-	defines		{"NDEBUG"}
+	includedirs	"cares/"
+	INCLUDES	"lua51"
+	
 	
 	WINDOWS()
 		defines		{"USE_WINSOCK"}
-		libdirs		{"cares/msvc100/cares/lib-release/","cares/msvc100/cares/lib-release/lib/"}
-		links		{"Ws2_32","libcares","tier0"}
+		libdirs		{
+			"cares/msvc120/cares/lib-release/",
+			"cares/msvc120/cares/lib-release/lib/",
+			"cares/msvc110/cares/lib-release/",
+			"cares/msvc110/cares/lib-release/lib/",
+			"cares/msvc100/cares/lib-release/",
+			"cares/msvc100/cares/lib-release/lib/",
+			
+			}
+		links		{"Ws2_32","libcares"}
 		
 	LINUX()
 		libdirs		{"cares/.libs"}
@@ -22,3 +30,7 @@ SOLUTION"cares"
 		
 	PROJECT()
 		targetprefix		"gmsv_lib" -- hack
+		files	{"src/*.c"}
+		INCLUDES	"lua51"
+		
+		
