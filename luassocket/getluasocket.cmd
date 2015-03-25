@@ -1,0 +1,1 @@
+git clone --depth 1 --branch master https://github.com/diegonehab/luasocket.git
