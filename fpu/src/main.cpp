@@ -14,19 +14,19 @@
 #include <cstdio>
 #include <GarrysMod/Lua/Interface.h>
 
-static unsigned short
+static unsigned int
 x87_get_control_word(void)
 {
     
 
-	static unsigned short mode;
+	static unsigned int mode;
     #ifdef _WIN32 
 		__asm {
-			fstcw mode
+			STMXCSR mode
 		} 
     
 	#else
-		__asm__ __volatile__("fstcw %0\n\t":"=m"(*&mode):);
+		__asm__ __volatile__("STMXCSR %0\n\t":"=m"(*&mode):);
     #endif 
 	return mode;
 }
@@ -42,11 +42,11 @@ GMOD_MODULE_OPEN( )
 	double aaa = 0.66666666666666666666666;
     float fff = 0.666666666666666666666666;
 	
-    unsigned short control_word;
+    unsigned int control_word;
 
 	control_word = x87_get_control_word();
 
-    printf( "FPU Control Word: %.4x\n", control_word );
+    printf( "FPU Control Word: %x\n", control_word );
     printf( "%1.1f * %1.1f = %.15e\n", a, a, a * a );
 	
 	printf( "conv %.15e (%.15e) -> %.15e\n", aa,ff,(float)aa );
