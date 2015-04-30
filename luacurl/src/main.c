@@ -1,5 +1,5 @@
 #include "lua.h"
-int luaopen_cURL(lua_State *L);
+int luaopen_lcurl(lua_State *L);
 
 #ifdef _WIN32
 	#define GLUA_DLL_EXPORT  __declspec( dllexport ) 
@@ -9,7 +9,10 @@ int luaopen_cURL(lua_State *L);
 
 GLUA_DLL_EXPORT int gmod13_open( lua_State* L )
 {
-	return luaopen_cURL(L);
+	luaopen_lcurl(L);
+	lua_setglobal(L, "luacurl");
+
+	return 0;
 }
 
 GLUA_DLL_EXPORT int gmod13_close( lua_State* L )

@@ -11,3 +11,4 @@ cd ..
 copy zlib\zlib.lib deps\lib\zlib.lib
 copy zlib\*.h deps\include\
 copy zlib\zlib1.dll deps\bin\zlib1.dll
+pause
