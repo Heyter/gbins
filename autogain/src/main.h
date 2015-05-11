@@ -2,6 +2,8 @@
 #define _INCLUDE_METAMOD_SOURCE_PLUGIN_H_
 
 
+#include "lua.h"
+
 
 #ifndef ARRAYSIZE
 #define ARRAYSIZE(x)	((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))

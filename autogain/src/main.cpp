@@ -1,6 +1,9 @@
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
+#include <cstdio>
+
+#include "detours.h"
 #include "main.h"
 #include "voice_silk.h"
 #include "voice_speex.h"
@@ -8,12 +11,19 @@
 #include "memutils.h"
 
 
+   FILE * ASD;
+
+
+
 AutoGain g_AutoGain;
-void SV_BroadcastVoiceData(IClient * pClient, int nBytes, char * data, int64 xuid)
+
+typedef void (* tBroadcastVoiceData ) ( IClient * , int , char * , int64  ) ;
+tBroadcastVoiceData original_BroadcastVoiceData = NULL;
+MologieDetours::Detour<tBroadcastVoiceData>* detour_BroadcastVoiceData = NULL;
+void hook_BroadcastVoiceData(IClient * pClient, int nBytes, char * data, int64 xuid)
 {
 	g_AutoGain.OnBroadcastVoiceData(pClient, nBytes, data);
-
-	//(pClient, nBytes, data, xuid);
+	detour_BroadcastVoiceData->GetOriginalFunction()(pClient, nBytes, data, xuid);
 }
 
 
@@ -29,26 +39,48 @@ AutoGain::AutoGain()
 
 bool AutoGain::Load()
 {
+	
+	
+	ASD = fopen ("file.dat", "w+");
+	
 	void *adrVoiceData = NULL;
 	int offsPlayerSlot = 0;
 
+	void *lHandle = dlopen( ENGINE_LIB, RTLD_LAZY  );
 
-    CreateInterfaceFn engineFactory = Sys_GetFactory(ENGINE_LIB);
+	CreateInterfaceFn engineFactory = Sys_GetFactory(ENGINE_LIB);
 
-#ifdef _WIN32
-	adrVoiceData = g_MemUtils.FindPattern(engineFactory, "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x83\xEC\x50\x83\x78\x30", 14);
-	offsPlayerSlot = 14;
-#else
-	adrVoiceData = ResolveSymbol(engineFactory, "_Z21SV_BroadcastVoiceDataP7IClientiPcx");
-	offsPlayerSlot = 15;
-#endif
+//#ifdef _WIN32
+//	adrVoiceData = g_MemUtils.FindPattern(engineFactory, "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x83\xEC\x50\x83\x78\x30", 14);
+//	offsPlayerSlot = 14;
+//#else
+//	adrVoiceData = ResolveSymbol(engineFactory, "_Z21SV_BroadcastVoiceDataP7IClientiPcx");
+//	offsPlayerSlot = 15;
+//#endif
 
-	fGetPlayerSlot = (tGetPlayerSlot)ResolveSymbol(engineFactory, "_ZNK11CBaseClient13GetPlayerSlotEv");
+	if (!lHandle) return false;
 	
-	if (!adrVoiceData)
+	original_BroadcastVoiceData = (tBroadcastVoiceData)ResolveSymbol( lHandle, "_Z21SV_BroadcastVoiceDataP7IClientiPcx" );
+	if (original_BroadcastVoiceData) {
+			try {
+					detour_BroadcastVoiceData = new MologieDetours::Detour<tBroadcastVoiceData>(original_BroadcastVoiceData, hook_BroadcastVoiceData);
+			}
+			catch(MologieDetours::DetourException &e) {
+					Warning("BroadcastVoiceData: Detour failed: Internal error?\n");
+			}
+	} else {
+			Warning("BroadcastVoiceData: Detour failed: Signature not found. (plugin needs updating)\n");
+	}
+
+
+
+	fGetPlayerSlot = (tGetPlayerSlot)ResolveSymbol(lHandle, "_ZNK11CBaseClient13GetPlayerSlotEv");
+	if (!fGetPlayerSlot) 
 	{
+		Warning("fGetPlayerSlot: Scanning failed: Signature not found.\n");
 		return false;
 	}
+
 
 	m_Silk[0] = new Voice_Silk;
 
@@ -157,8 +189,45 @@ void AutoGain::OnBroadcastVoiceData(IClient *pClient, int nBytes, char *data)
 
 	if (nDecompressed)
 	{
+		// Normalize voice volume.
+		NormalizeClientVoice(playerslot, decompressed, nDecompressed);
 
 		// Recompress back into the game.
-		pVoiceCodec->Compress(decompressed, nDecompressed, pVoiceData, nVoiceBytes);
+		// pVoiceCodec->Compress(decompressed, nDecompressed, pVoiceData, nVoiceBytes);
 	}
 }
+
+
+void AutoGain::NormalizeClientVoice(int client, char *pVoiceData, int nSamples)
+{
+	
+	fwrite(pVoiceData,1,nSamples,ASD);
+	
+	int samplemul = nSamples * 2;
+	int maxgain = 0;
+
+	for (int i = 0; i < samplemul; i += 2)
+	{
+		short sample = ((short)pVoiceData[i+1] << 8) | (pVoiceData[i] & 0xFF);
+		sample = abs(sample);
+
+		if (sample > maxgain)
+			maxgain = sample;
+	}
+
+	if (maxgain == 0)
+		return;
+	Warning("%d %d\n",maxgain,nSamples);
+}
+
+extern "C" __attribute__( ( visibility("default") ) ) int gmod13_open( lua_State* LL )
+{
+	g_AutoGain.Load();
+	return 0;
+}
+extern "C" __attribute__( ( visibility("default") ) ) int gmod13_close( lua_State* LL )
+{
+	g_AutoGain.Unload();
+	return 0;
+}
+
