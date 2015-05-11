@@ -4,6 +4,9 @@
 #include "main.h"
 #include "voice_silk.h"
 #include "voice_speex.h"
+#include <eiface.h>
+#include "memutils.h"
+
 
 AutoGain g_AutoGain;
 void SV_BroadcastVoiceData(IClient * pClient, int nBytes, char * data, int64 xuid)
@@ -16,7 +19,6 @@ void SV_BroadcastVoiceData(IClient * pClient, int nBytes, char * data, int64 xui
 
 AutoGain::AutoGain()
 {
-	m_VoiceDetour = NULL;
 
 	for (int i = 0; i < ARRAYSIZE(m_Silk); i++)
 		m_Silk[i] = NULL;
@@ -31,14 +33,18 @@ bool AutoGain::Load()
 	int offsPlayerSlot = 0;
 
 
+    CreateInterfaceFn engineFactory = Sys_GetFactory(ENGINE_LIB);
+
 #ifdef _WIN32
 	adrVoiceData = g_MemUtils.FindPattern(engineFactory, "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x83\xEC\x50\x83\x78\x30", 14);
 	offsPlayerSlot = 14;
 #else
-	adrVoiceData = g_MemUtils.ResolveSymbol(engineFactory, "_Z21SV_BroadcastVoiceDataP7IClientiPcx");
+	adrVoiceData = ResolveSymbol(engineFactory, "_Z21SV_BroadcastVoiceDataP7IClientiPcx");
 	offsPlayerSlot = 15;
 #endif
 
+	fGetPlayerSlot = (tGetPlayerSlot)ResolveSymbol(engineFactory, "_ZNK11CBaseClient13GetPlayerSlotEv");
+	
 	if (!adrVoiceData)
 	{
 		return false;
@@ -60,20 +66,16 @@ bool AutoGain::Load()
 	}
 
 
-	m_VoiceDetour = DETOUR_CREATE_STATIC(SV_BroadcastVoiceData, adrVoiceData);
+	//m_VoiceDetour = DETOUR_CREATE_STATIC(SV_BroadcastVoiceData, adrVoiceData);
 
 
 	
 	return true;
 }
 
-bool AutoGain::Unload(char *error, size_t maxlen)
+bool AutoGain::Unload()
 {
-	if (m_VoiceDetour)
-	{
-		m_VoiceDetour->Destroy();
-		m_VoiceDetour = NULL;
-	}
+
 	
 	for (int i = 0; i < ARRAYSIZE(m_Silk); i++)
 	{
@@ -101,7 +103,7 @@ void AutoGain::OnBroadcastVoiceData(IClient *pClient, int nBytes, char *data)
 	if (!pClient || !nBytes || !data)
 		return;
 	
-	int playerslot = SH_MCALL(pClient, GetPlayerSlot)();
+	int playerslot = fGetPlayerSlot(pClient);
 	int nVoiceBytes = nBytes;
 	char *pVoiceData = data;
 	Voice *pVoiceCodec = NULL;

@@ -2,6 +2,7 @@
 #define _INCLUDE_METAMOD_SOURCE_PLUGIN_H_
 
 
+
 #ifndef ARRAYSIZE
 #define ARRAYSIZE(x)	((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 #endif
@@ -22,6 +23,11 @@ class Voice_Silk;
 class Voice_Speex;
 class CDetour;
 
+
+typedef int (* tGetPlayerSlot)( IClient * );
+tGetPlayerSlot fGetPlayerSlot = NULL;
+
+
 class AutoGain
 {
 public:
@@ -40,6 +46,13 @@ public:
 };
 
 extern AutoGain g_AutoGain;
+
+#ifdef _LINUX
+	#define ENGINE_LIB "engine_srv.so"
+#else
+	#define ENGINE_LIB "engine.dll"
+#endif
+
 
 
 #endif //_INCLUDE_METAMOD_SOURCE_PLUGIN_H_
