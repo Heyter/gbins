@@ -1,3 +1,4 @@
+--DEBUG=true
 dofile("../common.lua")
 
 --RequireDefaultlibs()
@@ -10,7 +11,7 @@ SOLUTION"gameserver"
 	INCLUDES	"gmod_sdk"
 	INCLUDES	"source_sdk"
 	
-	defines		{"NDEBUG"}
+	--defines		{"DEBUG"}
 	
 	WINDOWS()
 	LINUX()

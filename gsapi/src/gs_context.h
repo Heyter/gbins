@@ -48,9 +48,8 @@
 #include "dbg.h"
 	
 // steamworks api
-#include "isteamutils_csgo_old.h"
 #include "steam/steam_api.h"
-#include "steam/steam_gameserver.h"
+#include "steam_gameserver_modified.h"
 
 #include <GarrysMod/Lua/Interface.h>
 
