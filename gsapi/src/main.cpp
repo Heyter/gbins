@@ -35,7 +35,9 @@ void lhook(const char * name)
 		LUA->GetField( -1, "Run" );                       // Push ( 1 )
 		
 		LUA->PushString( name );   
-	Warning("HOOK: %s\n",name);
+	#ifdef DEBUG 
+		Warning("HOOK: %s\n",name);
+	#endif
 	
 	lua_lhook_toppos_start2 = LUA->Top();
 	
