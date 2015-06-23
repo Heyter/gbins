@@ -4,22 +4,28 @@
 #include "game/server/iplayerinfo.h"
 #include "vphysics_interface.h"
 
-#if defined(_WIN32) || defined(WIN32)
+#include "cbaseserver.h"
+
+//#define GMMODULE
+#include "GarrysMod/Lua/Interface.h"
+
+#ifdef _WIN32
 	const char enginepath[] = "engine.dll";
 	const char serverpath[] = "server.dll";
 	const char vphysicspath[] = "vphysics.dll";
 #else
 	const char enginepath[] = "engine_srv.so";
-	const char serverpath[] = "server_srv.so";
+	const char serverpath[] = "garrysmod/bin/server_srv.so";
 	const char vphysicspath[] = "vphysics_srv.so";
-#endif
 
-//#define GMMODULE
-#include "GarrysMod/Lua/Interface.h"
+	#include <dlfcn.h>
+	#include "memutils.h"
+#endif
 
 VEngineServerV21::IVEngineServer *engineserver;
 float *absoluteframetime;
 IPhysics *physics;
+CBaseServer *baseserver;
 
 int ServerCommand(lua_State *state)
 {
@@ -43,6 +49,20 @@ int PhysEnvSimulate(lua_State *state)
 	return 0;
 }
 
+#ifndef _WIN32
+	int GetNumClients(lua_State *state)
+	{
+		LUA->PushNumber(baseserver->GetNumClients());
+		return 1;
+	}
+
+	int GetNumFakeClients(lua_State *state)
+	{
+		LUA->PushNumber(baseserver->GetNumFakeClients());
+		return 1;
+	}
+#endif
+
 GMOD_MODULE_OPEN()
 {
 	CreateInterfaceFn enginedll = Sys_GetFactory(enginepath);
@@ -56,6 +76,12 @@ GMOD_MODULE_OPEN()
 	CreateInterfaceFn vphysicsdll = Sys_GetFactory(vphysicspath);
 	physics = (IPhysics*)vphysicsdll(VPHYSICS_INTERFACE_VERSION, 0);
 
+	#ifndef _WIN32
+		void *dlengine = dlopen(enginepath, RTLD_LAZY);
+		baseserver = (CBaseServer*)ResolveSymbol(dlengine, "sv");
+		dlclose(dlengine);
+	#endif
+
 	LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
 		LUA->GetField(-1, "ray");
 			LUA->PushCFunction(ServerCommand);
@@ -64,6 +90,12 @@ GMOD_MODULE_OPEN()
 			LUA->SetField(-2, "FrameTime");
 			LUA->PushCFunction(PhysEnvSimulate);
 			LUA->SetField(-2, "PhysEnvSimulate");
+			#ifndef _WIN32
+				LUA->PushCFunction(GetNumClients);
+				LUA->SetField(-2, "GetNumClients");
+				LUA->PushCFunction(GetNumFakeClients);
+				LUA->SetField(-2, "GetNumFakeClients");
+			#endif
 	LUA->Pop(2);
 
 	return 0;
@@ -79,6 +111,12 @@ GMOD_MODULE_CLOSE()
 			LUA->SetField(-2, "FrameTime");
 			LUA->PushNil();
 			LUA->SetField(-2, "PhysEnvSimulate");
+			#ifndef _WIN32
+				LUA->PushNil();
+				LUA->SetField(-2, "GetNumClients");
+				LUA->PushNil();
+				LUA->SetField(-2, "GetNumFakeClients");
+			#endif
 	LUA->Pop(2);
 
 	engineserver = 0;
