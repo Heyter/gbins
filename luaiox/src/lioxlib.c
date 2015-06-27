@@ -491,6 +491,12 @@ static int os_pushresult (lua_State *L, int i, const char *filename) {
 }
 
 
+static int os_remove (lua_State *L) {
+  const char *filename = luaL_checkstring(L, 1);
+  return os_pushresult(L, remove(filename) == 0, filename);
+}
+
+
 static int os_rename (lua_State *L) {
   const char *fromname = luaL_checkstring(L, 1);
   const char *toname = luaL_checkstring(L, 2);
@@ -512,6 +518,7 @@ static const luaL_Reg iolib[] = {
   {"type", io_type},
   {"write", io_write},
   {"rename",    os_rename},
+  {"remove",    os_remove},
   {NULL, NULL}
 };
 
