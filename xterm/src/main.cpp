@@ -4,6 +4,13 @@
 
 #include <GarrysMod/Lua/Interface.h>
 
+#ifdef KILL_INPUT
+	#include <dlfcn.h>
+	#include <pthread.h>
+	#include "memutils.h"
+#endif
+
+
 extern "C" {
 	#include "rgb2xterm.h"
 }
@@ -17,6 +24,7 @@ SpewOutputFunc_t oldspew = NULL;
 
 SpewRetval_t newspew( SpewType_t Type, const char *msg )
 {
+	
 	SpewRetval_t ret;
 
 	if ( !msg || *msg == '\0')
@@ -69,22 +77,55 @@ SpewRetval_t newspew( SpewType_t Type, const char *msg )
 	const char * grp = GetSpewOutputGroup();
 	
 	//printf("<%d,%d,%d,%d|%d,%d,%s>\x1b[38;5;%dm",RED,GREEN,BLUE,ALPHA,  Type,GetSpewOutputLevel(),grp?grp:"", val); // set color
-	printf("\x1b[38;5;%dm",val); // set color
+	
+	char buf[20] = "";
+	snprintf(buf,sizeof(buf),"\x1b[38;5;%dm",val); // set color
+	
+	oldspew( Type, buf );
+	
+	oldspew( Type, msg );
+	
+	oldspew( Type, "\x1b[0m" );
 
-	ret = oldspew( Type, msg );
-
-	printf("\x1b[0m"); // reset 
-	fflush(stdout);
-
-	return ret;
+	return SPEW_CONTINUE; // Anything but SPEW_CONTINUE only closes the server.
 }
-
 
 
 GMOD_MODULE_OPEN( )
 {
 	oldspew = GetSpewOutputFunc();
+	
+	// TEST: Get original func and remove the weird new buffering
+	//SpewOutputFunc( NULL );
+	//
+	//SpewOutputFunc_t origspew = GetSpewOutputFunc();
+	//
+	//if (! (oldspew==origspew) && origspew!=NULL) {
+	//	fputs("\nWARN: oldspew!=origspew. Overriding!!!\n",stderr);
+	//	printf("    >> orig %p cur %p new %p\n",origspew,oldspew, newspew);
+	//	oldspew = origspew;
+	//}
+	// UNDONE: Embrace new!
+	
+	
 	SpewOutputFunc( newspew );
+	
+	
+#ifdef KILL_INPUT
+	void * f = dlopen ("dedicated_srv.so", RTLD_NOW);
+	if (f) {
+		pthread_t * g_threadid = (pthread_t *) ResolveSymbol (f, "_ZL10g_threadid");
+		if (g_threadid!=NULL) {
+						
+			printf("g_threadid: %p/%p. Assigning NULL.\n",g_threadid,*g_threadid);
+			*g_threadid = -1;
+			g_threadid = -1;
+			
+			
+		} else fputs("can't resolve g_threadid from dedicated_srv\n",stderr);
+	} else fputs("cant open dedicated_srv\n",stderr);
+#endif
+
 	return 0;
 }
 
