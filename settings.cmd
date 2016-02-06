@@ -16,6 +16,11 @@
 	@set VSVER=120
 	@set VSVERR=12
 )
+@IF defined VS140COMNTOOLS @(
+	@set VSTOOLS="%VS140COMNTOOLS%"
+	@set VSVER=140
+	@set VSVERR=14
+)
 
 :cont
 @call %VSTOOLS%\vsvars32.bat
