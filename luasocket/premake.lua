@@ -8,7 +8,7 @@ SOLUTION"luasocket"
 	language"C"
 	INCLUDES	"lua51"
 	includedirs	{"luasocket/src"}
-	defines		{"NDEBUG"}
+	defines		{"NDEBUG","LUA_VERSION_NUM=501"}
 	
 	WINDOWS()
 		defines		{"USE_WINSOCK"}
@@ -29,6 +29,7 @@ SOLUTION"luasocket"
 					"luasocket/src/options.c",
 					"luasocket/src/select.c",
 					"luasocket/src/tcp.c",
+					"luasocket/src/compat.c",
 					"luasocket/src/timeout.c",
 					"luasocket/src/udp.c"
 				}
