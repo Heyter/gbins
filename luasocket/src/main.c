@@ -23,7 +23,10 @@ GLUA_DLL_EXPORT int gmod13_open( lua_State* L )
 	
 	// let's just load it directly?
 	luaopen_socket_core(L);
+	lua_setglobal( L, "socket");
+
 	luaopen_mime_core(L);
+	lua_setglobal( L, "mime");
 	
 	return 0;
 }
