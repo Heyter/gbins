@@ -1,5 +1,7 @@
 #include "lua.h"
 
+extern int luaopen_maxminddb(lua_State* L );
+
 #ifdef _WIN32
 	#define GLUA_DLL_EXPORT  __declspec( dllexport ) 
 #else
