@@ -35,7 +35,15 @@ int ServerCommand(lua_State *state)
 
 int GetActiveObjectCount(lua_State *state)
 {
-	LUA->PushNumber(physics->GetActiveObjectCount());
+	IPhysicsEnvironment *physenv = physics->GetActiveEnvironmentByIndex(0);
+	
+	if (!physenv) 
+	{
+		LUA->ThrowError("PhysEnv doesn't exist.");
+		return 0;
+	}
+
+	LUA->PushNumber(physenv->GetActiveObjectCount());
 	return 1;
 }
 
