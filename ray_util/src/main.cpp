@@ -33,6 +33,12 @@ int ServerCommand(lua_State *state)
 	return 0;
 }
 
+int GetActiveObjectCount(lua_State *state)
+{
+	LUA->PushNumber(physics->GetActiveObjectCount());
+	return 1;
+}
+
 int FrameTime(lua_State *state)
 {
 	LUA->PushNumber(*absoluteframetime);
@@ -88,6 +94,8 @@ GMOD_MODULE_OPEN()
 			LUA->SetField(-2, "ServerCommand");
 			LUA->PushCFunction(FrameTime);
 			LUA->SetField(-2, "FrameTime");
+			LUA->PushCFunction(GetActiveObjectCount);
+			LUA->SetField(-2, "GetActiveObjectCount");
 			LUA->PushCFunction(PhysEnvSimulate);
 			LUA->SetField(-2, "PhysEnvSimulate");
 			#ifndef _WIN32
@@ -107,6 +115,8 @@ GMOD_MODULE_CLOSE()
 		LUA->GetField(-1, "ray");
 			LUA->PushNil();
 			LUA->SetField(-2, "ServerCommand");
+			LUA->PushNil();
+			LUA->SetField(-2, "GetActiveObjectCount");
 			LUA->PushNil();
 			LUA->SetField(-2, "FrameTime");
 			LUA->PushNil();
