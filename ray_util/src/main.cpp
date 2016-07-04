@@ -3,6 +3,8 @@
 #include "eifacev21.h"
 #include "game/server/iplayerinfo.h"
 #include "vphysics_interface.h"
+#include "inetchannel.h"
+#include "iclient.h"
 
 #include "cbaseserver.h"
 
@@ -68,6 +70,35 @@ int PhysEnvSimulate(lua_State* state) {
 		LUA->PushNumber(baseserver->GetNumFakeClients());
 		return 1;
 	}
+
+	int GetAllClients(lua_State* state) {
+		LUA->CreateTable();
+		int n = 0;
+		for (int i = 0; i < baseserver->GetClientCount(); i++) {
+			IClient* client = baseserver->GetClient(i);
+			if (client->IsConnected()) {
+				LUA->PushNumber(++n);
+				LUA->CreateTable();
+					LUA->PushBool(client->IsActive());
+					LUA->SetField(-2, "Active");
+					LUA->PushBool(client->IsFakeClient());
+					LUA->SetField(-2, "FakeClient");
+					INetChannel* NetChannel = client->GetNetChannel();
+					if (NetChannel) {
+						LUA->PushString(NetChannel->GetRemoteAddress().ToString(true));
+						LUA->SetField(-2, "IPAddress");
+					}
+					LUA->PushString(client->GetClientName());
+					LUA->SetField(-2, "Name");
+					LUA->PushString(client->GetNetworkIDString());
+					LUA->SetField(-2, "SteamID");
+					LUA->PushNumber(client->GetUserID());
+					LUA->SetField(-2, "UserID");
+				LUA->SetTable(-3);
+			}
+		}
+		return 1;
+	}
 #endif
 
 GMOD_MODULE_OPEN() {
@@ -103,6 +134,8 @@ GMOD_MODULE_OPEN() {
 				LUA->SetField(-2, "GetNumClients");
 				LUA->PushCFunction(GetNumFakeClients);
 				LUA->SetField(-2, "GetNumFakeClients");
+				LUA->PushCFunction(GetAllClients);
+				LUA->SetField(-2, "GetAllClients");
 			#endif
 	LUA->Pop(2);
 
@@ -125,6 +158,8 @@ GMOD_MODULE_CLOSE() {
 				LUA->SetField(-2, "GetNumClients");
 				LUA->PushNil();
 				LUA->SetField(-2, "GetNumFakeClients");
+				LUA->PushNil();
+				LUA->SetField(-2, "GetAllClients");
 			#endif
 	LUA->Pop(2);
 
