@@ -161,7 +161,6 @@ int __Call(lua_State *LL)
 		return 1;
 	}
 
-    tvp = ares_timeout(channel, &tv2, &tv);
     select(nfds, &read_fds, &write_fds, NULL, &tv2);
     ares_process(channel, &read_fds, &write_fds);
 
