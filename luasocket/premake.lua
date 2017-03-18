@@ -41,5 +41,7 @@ SOLUTION"luasocket"
 		configuration	("linux")			
 			files		{	
 							"luasocket/src/unix.c",
-							"luasocket/src/usocket.c"
+							"luasocket/src/usocket.c",
+							"luasocket/src/unixstream.c",
+							"luasocket/src/unixdgram.c"
 						}
