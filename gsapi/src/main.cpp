@@ -112,7 +112,11 @@ GMOD_MODULE_OPEN( )
 		AddBindingFunc( "GetServerRealTime", GetServerRealTime );
 		AddBindingFunc( "SendUserDisconnect", SendUserDisconnect );
 		AddBindingFunc( "UpdateUserData", UpdateUserData );
+		
 		AddBindingFunc( "SetGameTags", SetGameTags );
+		AddBindingFunc( "SetKeyValue", SetKeyValue );
+		AddBindingFunc( "ClearAllKeyValues", ClearAllKeyValues );
+		
 		AddBindingFunc( "RequestGroupStatus", ReqGroupStatus );
 		
 	LUA->SetField( -2, "gameserver" );

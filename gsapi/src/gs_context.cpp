@@ -37,10 +37,6 @@ void CGSContext::Init()
 	if ( apicontext_ok ) return;
 	apicontext_ok = apicontext.Init();
 	
-	if ( !g_pSteamClientGameServer )
-	{
-		return;
-	}
 	
 	if (!apicontext_ok) {
 		Warning("[GSAPI] Failed to attach to server\n");
@@ -83,6 +79,15 @@ void CGSContext::SendUserDisconnect( CSteamID steamIDUser )
 	apicontext.SteamGameServer()->SendUserDisconnect( steamIDUser );
 }
 
+void CGSContext::SetKeyValue( const char *key, const char *val )
+{
+	apicontext.SteamGameServer()->SetKeyValue( key, val );
+}
+
+void CGSContext::ClearAllKeyValues()
+{
+	apicontext.SteamGameServer()->ClearAllKeyValues( );
+}
 
 void CGSContext::SetGameTags( const char *pchGameTags )
 {
@@ -341,6 +346,17 @@ bool CGSContext::RequestGroupStatus( CSteamID steamUser, CSteamID steamGroup )
 }
 
 
+void CGSContext::Steam_OnP2PSessionRequest( P2PSessionRequest_t *pCallback )
+{
+	NEED_LUA
+	
+	lhook("OnP2PSessionRequest");
+	
+		PushSteamID(pCallback->m_steamIDRemote);
+
+	lhook_call();
+	
+}
 
 void CGSContext::Steam_OnGSGroupStatus( GSClientGroupStatus_t *pParam )
 {
@@ -522,6 +538,30 @@ LUA_FUNCTION( UpdateUserData )
 
 	LUA->PushBool( bRet );
 	return 1;
+}
+
+LUA_FUNCTION( ClearAllKeyValues )
+{
+	GSAPI()
+
+	g_pGSContext->ClearAllKeyValues( );
+	return 0;
+}
+
+
+LUA_FUNCTION( SetKeyValue )
+{
+	GSAPI()
+
+	LUA->CheckType( 1, GarrysMod::Lua::Type::STRING );
+	LUA->CheckType( 2, GarrysMod::Lua::Type::STRING );
+
+	const char *key = LUA->GetString( 1 );
+	const char *val = LUA->GetString( 2 );
+
+	g_pGSContext->SetKeyValue( key, val );
+	
+	return 0;
 }
 
 

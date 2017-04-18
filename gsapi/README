@@ -1,0 +1,7 @@
+
+OUTDATED INFO, NO LONGER NEEDED:
+
+You need to get steamclient.so from latest steam client linux and libsteam_api.so replacement from steamworks sdk
+Latest CS:GO files will apparently work too
+
+Alternatively you need to use an old steamworks sdk to make it all work

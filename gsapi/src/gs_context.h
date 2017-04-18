@@ -21,7 +21,7 @@
 
 
 #define GSAPI() \
-	if ( !g_pSteamClientGameServer || !g_pGSContext || !g_pGSContext->apicontext_ok ) \
+	if ( !g_pGSContext || !g_pGSContext->apicontext_ok ) \
 	{ \
 		LUA->ThrowError( "GsAPI: Not available!" ); \
 		return 0; \
@@ -82,6 +82,8 @@ public:
 	
 		m_CallbackCallCompleted( this, &CGSContext::Steam_OnCallCompleted ),
 		m_CallbackStatsUnloaded( this, &CGSContext::Steam_OnStatsUnloaded ),
+		
+		m_CallbackP2PSessionRequest( this, &CGSContext::Steam_OnP2PSessionRequest ),
 
 		state( luaState ),
 		first_init( false ),
@@ -116,7 +118,9 @@ public:
 
 	void GetGameStats();
 
-
+	void SetKeyValue( const char *key, const char *val );
+	void ClearAllKeyValues();
+	
 	// gameserverstats functions
 	bool RequestUserStats( CSteamID steamID );
 
@@ -148,6 +152,8 @@ private:
 	STEAM_GAMESERVER_CALLBACK( CGSContext, Steam_OnCallCompleted, SteamAPICallCompleted_t, m_CallbackCallCompleted );
 	STEAM_GAMESERVER_CALLBACK( CGSContext, Steam_OnStatsUnloaded, GSStatsUnloaded_t, m_CallbackStatsUnloaded );
 
+	STEAM_GAMESERVER_CALLBACK( CGSContext, Steam_OnP2PSessionRequest, P2PSessionRequest_t, m_CallbackP2PSessionRequest );
+	
 	// for api calls
 	CallResultMap m_mapCallResults;
 
@@ -177,6 +183,8 @@ LUA_FUNCTION( GetServerRealTime );
 LUA_FUNCTION( SendUserDisconnect );
 LUA_FUNCTION( SetServerType );
 LUA_FUNCTION( SetGameTags );
+LUA_FUNCTION( SetKeyValue );
+LUA_FUNCTION( ClearAllKeyValues );
 LUA_FUNCTION( GetGameStats );
 
 // gameserverstats funcs
