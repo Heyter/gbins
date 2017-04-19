@@ -15,7 +15,7 @@ Requirements:
 		GnuWin32 ( http://sourceforge.net/projects/getgnuwin32/files/getgnuwin32/ )
 			- It is recommended that you get gnuwin32 tools in your PATH or some things may not work
 	Linux:
-		apt-get install build-essential gcc g++ gcc-multilib git subversion wget tar bzip2 gzip unzip
+		apt-get install build-essential gcc g++ gcc-multilib g++-multilib git subversion wget tar bzip2 gzip unzip
 	Mac:
 		TODO
 
