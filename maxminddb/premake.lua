@@ -12,6 +12,7 @@ SOLUTION"maxminddb"
 	includedirs	"libmaxminddb/include"
 	includedirs	"libmaxminddb/src"
 	includedirs	"libmaxminddb"
+	includedirs	"conf"
 	libdirs	"libmaxminddb/src/.libs"
 	
 	WINDOWS()
