@@ -6,11 +6,6 @@
 	#include <ws2tcpip.h>
 #endif
 
-extern "C" {
-	#include "lua.h"
-	#include "lauxlib.h"
-}
-
 #include "libGeoIP/GeoIP.h"
 #include "libGeoIP/GeoIPCity.h"
 
@@ -21,22 +16,20 @@ GeoIP * CITY;
 GeoIP * ASN;
 GeoIP * NET;
 
-lua_State* state;
-
-void SafeSetMember(const char * what,const char * val) {
+void SafeSetMember(GarrysMod::Lua::ILuaBase* LUA, const char * what,const char * val) {
 	if (val!=NULL && what!=NULL) {
-		lua_pushstring(state, val); 
-		lua_setfield(state, -2, what);
+		LUA->PushString(val);
+		LUA->SetField(-2, what);
 	}
 }
-void SafeSetMember(const char * what,double val) {
+void SafeSetMember(GarrysMod::Lua::ILuaBase* LUA, const char * what,double val) {
 	if (what!=NULL) {
-		lua_pushnumber(state, val); 
-		lua_setfield(state, -2, what);
+		LUA->PushNumber(val);
+		LUA->SetField(-2, what);
 	}
 }
 
-bool GeoIPToLua(const char * ipstring) {
+bool GeoIPToLua(GarrysMod::Lua::ILuaBase* LUA, const char * ipstring) {
 	
 	if (!COUNTRY) return false;
 	
@@ -45,15 +38,15 @@ bool GeoIPToLua(const char * ipstring) {
 	gir = GeoIP_record_by_addr(COUNTRY, ipstring);
 	
 	if (gir) {
-		SafeSetMember("city",gir->city);
-		SafeSetMember("country_name",gir->country_name);
-		SafeSetMember("region",gir->region);
-		SafeSetMember("country_code",gir->country_code);
-		SafeSetMember("postal_code",gir->postal_code);
-		
-		SafeSetMember("latitude",gir->latitude);
-		SafeSetMember("longitude",gir->longitude);
-		SafeSetMember("netmask",gir->netmask);
+		SafeSetMember(LUA, "city",gir->city);
+		SafeSetMember(LUA, "country_name",gir->country_name);
+		SafeSetMember(LUA, "region",gir->region);
+		SafeSetMember(LUA, "country_code",gir->country_code);
+		SafeSetMember(LUA, "postal_code",gir->postal_code);
+
+		SafeSetMember(LUA, "latitude",gir->latitude);
+		SafeSetMember(LUA, "longitude",gir->longitude);
+		SafeSetMember(LUA, "netmask",gir->netmask);
 		
 		GeoIPRecord_delete(gir);
 	}
@@ -62,88 +55,84 @@ bool GeoIPToLua(const char * ipstring) {
 	// other DBs
 	
 	if (ISP) 
-		SafeSetMember("ISP",GeoIP_org_by_name( ISP, ipstring ));
+		SafeSetMember(LUA, "ISP",GeoIP_org_by_name( ISP, ipstring ));
 		
 	if (ORG) 
-		SafeSetMember("org",GeoIP_name_by_name( ORG, ipstring ));
+		SafeSetMember(LUA, "org",GeoIP_name_by_name( ORG, ipstring ));
 	
 	if (CITY) {
 		gir = GeoIP_record_by_addr(CITY, ipstring);
 		
 		if (gir) {
-			SafeSetMember("_city",gir->city);
-			SafeSetMember("_country_name",gir->country_name);
-			SafeSetMember("_region",gir->region);
-			SafeSetMember("_country_code",gir->country_code);
-			SafeSetMember("_postal_code",gir->postal_code);
+			SafeSetMember(LUA, "_city",gir->city);
+			SafeSetMember(LUA, "_country_name",gir->country_name);
+			SafeSetMember(LUA, "_region",gir->region);
+			SafeSetMember(LUA, "_country_code",gir->country_code);
+			SafeSetMember(LUA, "_postal_code",gir->postal_code);
 			
-			SafeSetMember("_latitude",gir->latitude);
-			SafeSetMember("_longitude",gir->longitude);
-			SafeSetMember("_netmask",gir->netmask);
+			SafeSetMember(LUA, "_latitude",gir->latitude);
+			SafeSetMember(LUA, "_longitude",gir->longitude);
+			SafeSetMember(LUA, "_netmask",gir->netmask);
 			GeoIPRecord_delete(gir);
 		}
 	}
 
 	if (ASN)
-		SafeSetMember("asn",GeoIP_org_by_name( ASN, ipstring ));
+		SafeSetMember(LUA, "asn",GeoIP_org_by_name( ASN, ipstring ));
 	
 	if (NET)
-		SafeSetMember("speed",GeoIP_id_by_name( NET, ipstring ));
+		SafeSetMember(LUA, "speed",GeoIP_id_by_name( NET, ipstring ));
 	
 	return true;
 	
 }
 
 
-int time_zone_by_country_and_region( lua_State* S )
+LUA_FUNCTION( time_zone_by_country_and_region )
 {
 	const char * ret = NULL;
-	state=S;
 
-	const char *country_code = luaL_checkstring(S, 1);
+	const char *country_code = LUA->CheckString(1);
 	
-	const char *region_code = luaL_checkstring(S, 2);
+	const char *region_code = LUA->CheckString( 2);
 
 	ret = GeoIP_time_zone_by_country_and_region(country_code,region_code);
 	
 	if (!ret) return 0;
 	
-	lua_pushstring(S, ret);
+	LUA->PushString(ret);
 	
 	return 1;
 }
-int region_name_by_code( lua_State* S )
+LUA_FUNCTION( region_name_by_code )
 {
 	const char * ret = NULL;
-	state=S;
 
-	const char *country_code = luaL_checkstring(S, 1);
+	const char *country_code = LUA->CheckString( 1);
 	
-	const char *region_code = luaL_checkstring(S, 2);
+	const char *region_code = LUA->CheckString( 2);
 
 	ret = GeoIP_region_name_by_code(country_code,region_code);
 	
 	if (!ret) return 0;
 	
-	lua_pushstring(S, ret);
+	LUA->PushString(ret);
 	
 	return 1;
 }
 
 
-int GeoIP_Get( lua_State* S )
+LUA_FUNCTION( GeoIP_Get )
 {
-	state=S;
-
-	const char *ipstring = luaL_checkstring(S, 1); // should we copy this to account for gc?
+	const char *ipstring = LUA->CheckString(1); // should we copy this to account for gc?
 
 	
-	lua_newtable(S);
+	LUA->CreateTable();
 	
-		bool ret = GeoIPToLua(ipstring);
+		bool ret = GeoIPToLua(LUA, ipstring);
 		if (!ret) {
-			lua_pushboolean(S, true); lua_setfield(S, -2,"error");
-			lua_pushboolean(S, true); lua_setfield(S, -2,"norecord");
+			LUA->PushBool(true); LUA->SetField(-2,"error");
+			LUA->PushBool(true); LUA->SetField(-2,"norecord");
 		}
 	
 	return 1;
@@ -166,11 +155,11 @@ GMOD_MODULE_OPEN()
 	LOADGEO(ASN,"GeoIPASNum",GEOIP_INDEX_CACHE);
 	LOADGEO(NET,"GeoIPNetSpeed",GEOIP_INDEX_CACHE);
 
-    lua_newtable(state);
-            lua_pushcfunction(state, time_zone_by_country_and_region); lua_setfield(state, -2, "timezone");
-            lua_pushcfunction(state, region_name_by_code); lua_setfield(state, -2, "region_name");
-            lua_pushcfunction(state, GeoIP_Get); lua_setfield(state, -2, "Get");
-    lua_setglobal(state, "GeoIP");
+	LUA->CreateTable();
+            LUA->PushCFunction(time_zone_by_country_and_region); LUA->SetField(-2, "timezone");
+			LUA->PushCFunction(region_name_by_code); LUA->SetField(-2, "region_name");
+			LUA->PushCFunction(GeoIP_Get); LUA->SetField(-2, "Get");
+    LUA->SetField(-10002, "GeoIP"); // global table index
 
 	return 0;
 }
