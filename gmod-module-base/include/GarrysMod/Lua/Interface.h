@@ -24,30 +24,30 @@ struct lua_State
     #define GMOD_MODULE_CLOSE() DLL_EXPORT int gmod13_close( lua_State* state )
 #else
     #define GMOD_MODULE_OPEN()                     \
-        int gmod13_open__Imp( ILuaBase* LUA );     \
+        int gmod13_open__Imp( GarrysMod::Lua::ILuaBase* LUA );     \
         DLL_EXPORT int gmod13_open( lua_State* L ) \
         {                                          \
             return gmod13_open__Imp( L->luabase ); \
         }                                          \
-        int gmod13_open__Imp( ILuaBase* LUA )
+        int gmod13_open__Imp( GarrysMod::Lua::ILuaBase* LUA )
 
     #define GMOD_MODULE_CLOSE()                     \
-        int gmod13_close__Imp( ILuaBase* LUA );     \
+        int gmod13_close__Imp( GarrysMod::Lua::ILuaBase* LUA );     \
         DLL_EXPORT int gmod13_close( lua_State* L ) \
         {                                           \
             return gmod13_close__Imp( L->luabase ); \
         }                                           \
-        int gmod13_close__Imp( ILuaBase* LUA )
+        int gmod13_close__Imp( GarrysMod::Lua::ILuaBase* LUA )
 
     #define LUA_FUNCTION( FUNC )          \
-        int FUNC##__Imp( ILuaBase* LUA ); \
+        int FUNC##__Imp( GarrysMod::Lua::ILuaBase* LUA ); \
         int FUNC( lua_State* L )          \
         {                                 \
-            ILuaBase* LUA = L->luabase;   \
+            GarrysMod::Lua::ILuaBase* LUA = L->luabase;   \
             LUA->SetState(L);             \
             return FUNC##__Imp( LUA );    \
         }                                 \
-        int FUNC##__Imp( ILuaBase* LUA )
+        int FUNC##__Imp( GarrysMod::Lua::ILuaBase* LUA )
 #endif
 
 #endif
