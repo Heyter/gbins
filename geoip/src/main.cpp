@@ -6,6 +6,11 @@
 	#include <ws2tcpip.h>
 #endif
 
+extern "C" {
+	#include "lua.h"
+	#include "lauxlib.h"
+}
+
 #include "libGeoIP/GeoIP.h"
 #include "libGeoIP/GeoIPCity.h"
 
@@ -16,20 +21,18 @@ GeoIP * CITY;
 GeoIP * ASN;
 GeoIP * NET;
 
-using namespace GarrysMod::Lua;
-
 lua_State* state;
 
 void SafeSetMember(const char * what,const char * val) {
 	if (val!=NULL && what!=NULL) {
-		LUA->PushString(val); 
-		LUA->SetField(-2, what);
+		lua_pushstring(state, val); 
+		lua_setfield(state, -2, what);
 	}
 }
 void SafeSetMember(const char * what,double val) {
 	if (what!=NULL) {
-		LUA->PushNumber(val); 
-		LUA->SetField(-2, what);
+		lua_pushnumber(state, val); 
+		lua_setfield(state, -2, what);
 	}
 }
 
@@ -97,17 +100,15 @@ int time_zone_by_country_and_region( lua_State* S )
 	const char * ret = NULL;
 	state=S;
 
-	LUA->CheckType(1, Type::STRING);
-	const char *country_code = LUA->GetString(1);
+	const char *country_code = luaL_checkstring(S, 1);
 	
-	LUA->CheckType(2, Type::STRING);
-	const char *region_code = LUA->GetString(2);
+	const char *region_code = luaL_checkstring(S, 2);
 
 	ret = GeoIP_time_zone_by_country_and_region(country_code,region_code);
 	
 	if (!ret) return 0;
 	
-	LUA->PushString(ret);
+	lua_pushstring(S, ret);
 	
 	return 1;
 }
@@ -116,17 +117,15 @@ int region_name_by_code( lua_State* S )
 	const char * ret = NULL;
 	state=S;
 
-	LUA->CheckType(1, Type::STRING);
-	const char *country_code = LUA->GetString(1);
+	const char *country_code = luaL_checkstring(S, 1);
 	
-	LUA->CheckType(2, Type::STRING);
-	const char *region_code = LUA->GetString(2);
+	const char *region_code = luaL_checkstring(S, 2);
 
 	ret = GeoIP_region_name_by_code(country_code,region_code);
 	
 	if (!ret) return 0;
 	
-	LUA->PushString(ret);
+	lua_pushstring(S, ret);
 	
 	return 1;
 }
@@ -136,16 +135,15 @@ int GeoIP_Get( lua_State* S )
 {
 	state=S;
 
-	LUA->CheckType(1, Type::STRING);
-	const char *ipstring = LUA->GetString(1); // should we copy this to account for gc?
+	const char *ipstring = luaL_checkstring(S, 1); // should we copy this to account for gc?
 
 	
-	LUA->CreateTable();
+	lua_newtable(S);
 	
 		bool ret = GeoIPToLua(ipstring);
 		if (!ret) {
-			LUA->PushBool(true); LUA->SetField(-2,"error");
-			LUA->PushBool(true); LUA->SetField(-2,"norecord");
+			lua_pushboolean(S, true); lua_setfield(S, -2,"error");
+			lua_pushboolean(S, true); lua_setfield(S, -2,"norecord");
 		}
 	
 	return 1;
@@ -168,14 +166,11 @@ GMOD_MODULE_OPEN()
 	LOADGEO(ASN,"GeoIPASNum",GEOIP_INDEX_CACHE);
 	LOADGEO(NET,"GeoIPNetSpeed",GEOIP_INDEX_CACHE);
 
-	LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
-    LUA->CreateTable();
-
-            LUA->PushCFunction(time_zone_by_country_and_region); LUA->SetField(-2, "timezone");
-            LUA->PushCFunction(region_name_by_code); LUA->SetField(-2, "region_name");
-            LUA->PushCFunction(GeoIP_Get); LUA->SetField(-2, "Get");
-
-    LUA->SetField(-2, "GeoIP");
+    lua_newtable(state);
+            lua_pushcfunction(state, time_zone_by_country_and_region); lua_setfield(state, -2, "timezone");
+            lua_pushcfunction(state, region_name_by_code); lua_setfield(state, -2, "region_name");
+            lua_pushcfunction(state, GeoIP_Get); lua_setfield(state, -2, "Get");
+    lua_setglobal(state, "GeoIP");
 
 	return 0;
 }

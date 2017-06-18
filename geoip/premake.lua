@@ -9,6 +9,7 @@ SOLUTION"geoip"
 	defines		{"NDEBUG"}
 	includedirs	"geoip/"
 	includedirs	"geoip/libGeoIP"
+	INCLUDES		"lua51"
 
 	
 	WINDOWS()
@@ -18,6 +19,7 @@ SOLUTION"geoip"
 
 	PROJECT()
 		links "geoiplib"
+		INCLUDES		"lua51"
 		configuration 		"windows"
 		configuration 		"linux"
 
