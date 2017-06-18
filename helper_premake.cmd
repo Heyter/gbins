@@ -1,5 +1,7 @@
 @echo Creating solution files...
 @echo.
+..\premake5 --os=windows --file=premake.lua vs2017
+@IF NOT ERRORLEVEL 0 GOTO FAIL
 ..\premake5 --os=windows --file=premake.lua vs2015
 @IF NOT ERRORLEVEL 0 GOTO FAIL
 ..\premake5 --os=windows --file=premake.lua vs2013
