@@ -38,13 +38,14 @@ SpewRetval_t LuaSpew( SpewType_t spewType, const char *pMsg )
 
 	// NOW WE ARE TALKING
 	lua_State* state=luas;
+	
+	inspew = true;
 
 	LUA->PushSpecial( GarrysMod::Lua::SPECIAL_GLOB );
 		LUA->GetField( -1, "hook" );
 			LUA->GetField( -1, "Run" );
 				
-				
-				LUA->PushString( "EngineSpew" );
+				LUA->PushString( "EngineSpew" ); // MAY TRIGGER LUA PANIC
 				LUA->PushNumber( (double) spewType  );
 				LUA->PushString( pMsg );
 				LUA->PushString( GetSpewOutputGroup()  );
@@ -62,9 +63,8 @@ SpewRetval_t LuaSpew( SpewType_t spewType, const char *pMsg )
 
 				/*
 					lua_run hook.Add("EngineSpew","a",function(t,msg,grp,lev,r,g,b) print(...) end)
-					
 				*/
-				inspew = true;
+				
 				
 				// hook.Run("EngineSpew",0,"","",0,0,0,0);
 				if( LUA->PCall( 8, 1, 0 ) != 0 )
