@@ -1,4 +1,3 @@
-#include "ILuaModuleManager.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -13,7 +12,7 @@
 #include "sys/vtimes.h"
 #include <sys/statvfs.h>
 #include <sys/statfs.h>
-GMOD_MODULE(Init, Shutdown);
+#include <GarrysMod/Lua/Interface.h>
 
 
 void process_mem_usage(double& vm_usage, double& resident_set)
@@ -58,8 +57,8 @@ LUA_FUNCTION(GetMemoryUsage)
 {
 	double vm, rss;
 	process_mem_usage(vm, rss);
-	Lua()->Push(vm);
-	Lua()->Push(rss);
+	LUA->PushNumber(vm);
+	LUA->PushNumber(rss);
 
 	return 2;
 }
@@ -74,26 +73,26 @@ LUA_FUNCTION(GetMemInfo)
     totalVirtualMem += memInfo.totalswap;
     totalVirtualMem *= memInfo.mem_unit;
 	
-	Lua()->Push((double) totalVirtualMem / (double)1024 );
+	LUA->PushNumber((double) totalVirtualMem / (double)1024 );
 
 	long long virtualMemUsed = memInfo.totalram - memInfo.freeram;
    
     virtualMemUsed += memInfo.totalswap - memInfo.freeswap;
     virtualMemUsed *= memInfo.mem_unit;
 	
-	Lua()->Push((double) virtualMemUsed/ (double)1024 );
+	LUA->PushNumber((double) virtualMemUsed/ (double)1024 );
 	
 	long long totalPhysMem = memInfo.totalram;
     //Multiply in next statement to avoid int overflow on right hand side...
     totalPhysMem *= memInfo.mem_unit;
 	
-	Lua()->Push((double) totalPhysMem/ (double)1024 );
+	LUA->PushNumber((double) totalPhysMem/ (double)1024 );
 	
 	long long physMemUsed = memInfo.totalram - memInfo.freeram;
     //Multiply in next statement to avoid int overflow on right hand side...
     physMemUsed *= memInfo.mem_unit;
 	
-	Lua()->Push((double) physMemUsed/ (double)1024 );
+	LUA->PushNumber((double) physMemUsed/ (double)1024 );
 	
 	return 4;
 }
@@ -158,7 +157,7 @@ LUA_FUNCTION(InitSysCPUUsage)
 LUA_FUNCTION(SysCPUUsage)
 {
 
-	Lua()->Push(SysCPUUsage_c());
+	LUA->PushNumber(SysCPUUsage_c());
 
 	return 1;
 }
@@ -226,7 +225,7 @@ LUA_FUNCTION(InitGameCPUUsage)
 LUA_FUNCTION(GameCPUUsage)
 {
 
-	Lua()->Push(GameCPUUsage_c());
+	LUA->PushNumber(GameCPUUsage_c());
 
 	return 1;
 }
@@ -237,21 +236,25 @@ LUA_FUNCTION(DiskUsage)
 
     struct statvfs fiData;
 	
-	Lua()->CheckType(1, Type::STRING);
-	const char *statwhat = Lua()->GetString(1);
+	LUA->CheckType(1, GarrysMod::Lua::Type::STRING);
+	const char *statwhat = LUA->GetString(1);
 	
 	if((statvfs(statwhat,&fiData)) < 0 ) {
 		return 0;
 	}
 
-	Lua()->Push((double)fiData.f_bsize); /* file system block size */
-	Lua()->Push((double)fiData.f_bavail); /* # free blocks for unprivileged users */
-	Lua()->Push((double)fiData.f_files); /* # inodes */
-	Lua()->Push((double)fiData.f_favail); /* # free inodes for unprivileged users */
-	Lua()->Push((double)fiData.f_fsid); // seeing if it is the same FS.
+	LUA->PushNumber((double)fiData.f_bsize); /* file system block size */
+	LUA->PushNumber((double)fiData.f_bavail); /* # free blocks for unprivileged users */
+	LUA->PushNumber((double)fiData.f_files); /* # inodes */
+	LUA->PushNumber((double)fiData.f_favail); /* # free inodes for unprivileged users */
+	LUA->PushNumber((double)fiData.f_fsid); // seeing if it is the same FS.
 	return 5;
 }
 
+
+#define SetFieldNumber(name, number)\
+	LUA->PushNumber(number);\
+	LUA->SetField(-2, name);
 
 LUA_FUNCTION(sysinfo)
 {
@@ -259,50 +262,52 @@ LUA_FUNCTION(sysinfo)
     
 	sysinfo (&memInfo);
 
-	ILuaObject *tbl = Lua()->GetNewTable();
-		tbl->SetMember("uptime"		, (double) memInfo.uptime    );
-		tbl->SetMember("totalram"	, (double) memInfo.totalram  );
-		tbl->SetMember("freeram"	, (double) memInfo.freeram   );
-		tbl->SetMember("sharedram"	, (double) memInfo.sharedram );
-		tbl->SetMember("bufferram"	, (double) memInfo.bufferram );
-		tbl->SetMember("totalswap"	, (double) memInfo.totalswap );
-		tbl->SetMember("freeswap"	, (double) memInfo.freeswap  );
-		tbl->SetMember("procs"		, (double) memInfo.procs     );
-		tbl->SetMember("totalhigh"	, (double) memInfo.totalhigh );
-		tbl->SetMember("freehigh"	, (double) memInfo.freehigh  );
-		tbl->SetMember("mem_unit"	, (double) memInfo.mem_unit  );
-		Lua()->Push(tbl);
-	tbl->UnReference();
+	LUA->CreateTable();
+		SetFieldNumber("uptime"		, (double) memInfo.uptime    );
+		SetFieldNumber("totalram"	, (double) memInfo.totalram  );
+		SetFieldNumber("freeram"	, (double) memInfo.freeram   );
+		SetFieldNumber("sharedram"	, (double) memInfo.sharedram );
+		SetFieldNumber("bufferram"	, (double) memInfo.bufferram );
+		SetFieldNumber("totalswap"	, (double) memInfo.totalswap );
+		SetFieldNumber("freeswap"	, (double) memInfo.freeswap  );
+		SetFieldNumber("procs"		, (double) memInfo.procs     );
+		SetFieldNumber("totalhigh"	, (double) memInfo.totalhigh );
+		SetFieldNumber("freehigh"	, (double) memInfo.freehigh  );
+		SetFieldNumber("mem_unit"	, (double) memInfo.mem_unit  );
 
 	return 1;
 }
 
 
+#define SetFieldFunc(name, func)\
+	LUA->PushCFunction(func);\
+	LUA->SetField(-2, name);
 
-int Init(lua_State *L)
+GMOD_MODULE_OPEN()
 {
+	// !l require'nixinfo' local a,b=nixinfo.GetMemoryUsage() Msg"[Memory usage] "print(math.Round(a/1024)..' MB virt',math.Round(b/1024)..' MB Res')
 
-		
-	ILuaObject *nixinfo = Lua()->GetNewTable();
-	
-		// !l require'nixinfo' local a,b=nixinfo.GetMemoryUsage() Msg"[Memory usage] "print(math.Round(a/1024)..' MB virt',math.Round(b/1024)..' MB Res')
-		nixinfo->SetMember("GetMemoryUsage", GetMemoryUsage);
-		nixinfo->SetMember("GetMemInfo", GetMemInfo);
-		nixinfo->SetMember("SysCPUUsage", SysCPUUsage);
-		nixinfo->SetMember("InitSysCPUUsage", InitSysCPUUsage);
-		nixinfo->SetMember("GameCPUUsage", GameCPUUsage);
-		nixinfo->SetMember("InitGameCPUUsage", InitGameCPUUsage);
-		nixinfo->SetMember("sysinfo", sysinfo);
-		nixinfo->SetMember("DiskUsage", DiskUsage);
-		Lua()->Global()->SetMember("nixinfo", nixinfo);
-		
-	nixinfo->UnReference();
+	LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
+	LUA->CreateTable();
+		SetFieldFunc("GetMemoryUsage", GetMemoryUsage);
+		SetFieldFunc("GetMemInfo", GetMemInfo);
+		SetFieldFunc("SysCPUUsage", SysCPUUsage);
+		SetFieldFunc("InitSysCPUUsage", InitSysCPUUsage);
+		SetFieldFunc("GameCPUUsage", GameCPUUsage);
+		SetFieldFunc("InitGameCPUUsage", InitGameCPUUsage);
+		SetFieldFunc("sysinfo", sysinfo);
+		SetFieldFunc("DiskUsage", DiskUsage);
+	LUA->SetField(-2, "nixinfo");
 
 	return 0;
 
 }
 
-int Shutdown(lua_State *L)
+GMOD_MODULE_CLOSE()
 {
+	LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
+	LUA->PushNil();
+	LUA->SetField(-2, "nixinfo");
+	
 	return 0;
 }
