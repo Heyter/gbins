@@ -94,6 +94,11 @@ void CGSContext::SetGameTags( const char *pchGameTags )
 	apicontext.SteamGameServer()->SetGameTags( pchGameTags );
 }
 
+void CGSContext::SetMapName( const char *pchMapName )
+{
+	apicontext.SteamGameServer()->SetMapName( pchMapName );
+}
+
 // gameserverstats functions
 bool CGSContext::RequestUserStats( CSteamID steamID )
 {
@@ -574,6 +579,18 @@ LUA_FUNCTION( SetGameTags )
 	const char *pchGameTags = LUA->GetString( 1 );
 
 	g_pGSContext->SetGameTags( pchGameTags );
+	return 0;
+}
+
+LUA_FUNCTION( SetMapName )
+{
+	GSAPI()
+
+	LUA->CheckType( 1, GarrysMod::Lua::Type::STRING );
+
+	const char *pchMapName = LUA->GetString( 1 );
+
+	g_pGSContext->SetMapName( pchMapName );
 	return 0;
 }
 

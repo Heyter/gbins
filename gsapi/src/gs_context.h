@@ -114,6 +114,7 @@ public:
 	bool SetServerType( uint32 unServerFlags, uint32 unGameIP, uint16 unGamePort, uint16 unSpectatorPort,
 						uint16 usQueryPort, const char *pchGameDir,  const char *pchVersion, bool bLANMode );
 
+	void SetMapName( const char *pszMapName );
 	void SetGameTags( const char *pchGameTags );
 
 	void GetGameStats();
@@ -183,6 +184,7 @@ LUA_FUNCTION( GetServerRealTime );
 LUA_FUNCTION( SendUserDisconnect );
 LUA_FUNCTION( SetServerType );
 LUA_FUNCTION( SetGameTags );
+LUA_FUNCTION( SetMapName );
 LUA_FUNCTION( SetKeyValue );
 LUA_FUNCTION( ClearAllKeyValues );
 LUA_FUNCTION( GetGameStats );

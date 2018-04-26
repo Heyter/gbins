@@ -114,6 +114,7 @@ GMOD_MODULE_OPEN( )
 		AddBindingFunc( "UpdateUserData", UpdateUserData );
 		
 		AddBindingFunc( "SetGameTags", SetGameTags );
+		AddBindingFunc( "SetMapName", SetMapName );
 		AddBindingFunc( "SetKeyValue", SetKeyValue );
 		AddBindingFunc( "ClearAllKeyValues", ClearAllKeyValues );
 		
