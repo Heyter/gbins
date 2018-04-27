@@ -12,6 +12,7 @@ SOLUTION"gameserver"
 	INCLUDES	"source_sdk"
 	
 	--defines		{"DEBUG"}
+	defines		{"GMOD_ALLOW_DEPRECATED"}
 	
 	WINDOWS()
 	LINUX()
