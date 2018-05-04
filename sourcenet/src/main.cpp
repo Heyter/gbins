@@ -1,4 +1,4 @@
-﻿// Required interfaces
+// Required interfaces
 #define IVENGINESERVER_INTERFACE
 #define IVENGINECLIENT_INTERFACE
 #define ICVAR_INTERFACE
@@ -137,7 +137,7 @@ int Open( lua_State *L )
 		return 0;
 	}
 
-	g_pEngineServer = (IVEngineServer *)fnEngineFactory( INTERFACEVERSION_VENGINESERVER, NULL );
+	g_pEngineServer = (IVEngineServer *)fnEngineFactory( INTERFACEVERSION_VENGINESERVER_VERSION_21, NULL );
 
 	if ( !g_pEngineServer )
 	{
